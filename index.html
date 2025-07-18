@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlugIN - Keyword Directory</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PlugIN</h1>
+            <nav>
+                <button class="nav-btn active" data-section="storage">Storage</button>
+                <button class="nav-btn" data-section="builder">Builder</button>
+                <button class="nav-btn" data-section="trainer">Trainer</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Storage Section -->
+            <section id="storage" class="section active">
+                <h2>Storage</h2>
+                <div class="storage-container">
+                    <div class="categories-panel">
+                        <h3>Directory</h3>
+                        <div id="categoryList" class="category-list">
+                            <!-- Categories will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="keywords-panel">
+                        <div id="categoryView">
+                            <h3 id="currentCategoryTitle">Select a Category</h3>
+                            <div id="categoryContent">
+                                <p style="color: #7f8c8d; font-style: italic;">Click on a category to view and manage its items.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Builder Section -->
+            <section id="builder" class="section">
+                <h2>Builder</h2>
+                <div class="builder-container">
+                    <div class="search-panel">
+                        <h3>Build Search</h3>
+                        <div class="search-controls">
+                            <select id="builderCategory">
+                                <option value="">Select category</option>
+                            </select>
+                            <button id="addToSearch">Add to Search</button>
+                            <button id="clearSearch">Clear Search</button>
+                        </div>
+                        <div id="searchBuilder" class="search-builder">
+                            <!-- Search terms will be built here -->
+                        </div>
+                        <div class="search-result">
+                            <h4>Generated Search String:</h4>
+                            <textarea id="searchString" readonly></textarea>
+                            <button id="copySearch">Copy to Clipboard</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trainer Section -->
+            <section id="trainer" class="section">
+                <h2>Trainer</h2>
+                <div class="trainer-container">
+                    <div class="training-panel">
+                        <h3>Training Content</h3>
+                        <div class="training-controls">
+                            <input type="text" id="trainingTitle" placeholder="Training title">
+                            <textarea id="trainingContent" placeholder="Enter training content here..."></textarea>
+                            <button id="saveTraining">Save Training</button>
+                        </div>
+                        <div id="trainingList" class="training-list">
+                            <!-- Training content will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Title Modal -->
+    <div id="addTitleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Title</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="titleName">Boolean Title:</label>
+                    <input type="text" id="titleName" placeholder="Enter boolean title">
+                </div>
+                <div class="form-group">
+                    <label>Boolean Options:</label>
+                    <div id="booleanOptionsList">
+                        <div class="boolean-option">
+                            <input type="text" placeholder="Boolean option" class="boolean-input">
+                            <button type="button" class="remove-option-btn" onclick="removeBooleanOption(this)">Remove</button>
+                        </div>
+                    </div>
+                    <button type="button" class="add-option-btn" onclick="addBooleanOption()">+ Add Boolean Option</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveTitle()" class="save-btn">Save Title</button>
+                <button onclick="closeModal()" class="cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Title Details Modal -->
+    <div id="titleDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="titleDetailsHeader">Title Details</h3>
+                <span class="close" onclick="closeTitleDetailsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="title-info">
+                    <h4 id="selectedTitleName"></h4>
+                </div>
+                <div class="boolean-options-section">
+                    <h4>Boolean Options:</h4>
+                    <div id="existingBooleanOptions"></div>
+                    <div class="add-new-option">
+                        <input type="text" id="newBooleanOption" placeholder="New boolean option">
+                        <button onclick="addNewBooleanOption()">Add Option</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeTitleDetailsModal()" class="cancel-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
