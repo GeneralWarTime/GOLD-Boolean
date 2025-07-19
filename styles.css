@@ -31,6 +31,47 @@ header h1 {
     font-size: 2.5em;
 }
 
+.backup-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.backup-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: Calibri, sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background-color: #ecf0f1;
+    color: #2c3e50;
+}
+
+.backup-btn:hover {
+    background-color: #bdc3c7;
+}
+
+.backup-btn.danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.backup-btn.danger:hover {
+    background-color: #c0392b;
+}
+
+.data-status {
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    background-color: #27ae60;
+    color: white;
+    margin-left: auto;
+}
+
 nav {
     display: flex;
     gap: 10px;

@@ -15,6 +15,12 @@
                 <button class="nav-btn" data-section="builder">Builder</button>
                 <button class="nav-btn" data-section="trainer">Trainer</button>
             </nav>
+            <div class="backup-controls">
+                <button onclick="exportData()" class="backup-btn" title="Export backup">💾 Export</button>
+                <button onclick="importData()" class="backup-btn" title="Import backup">📁 Import</button>
+                <button onclick="clearAllData()" class="backup-btn danger" title="Clear all data">🗑️ Clear</button>
+                <span id="dataStatus" class="data-status" title="Data status"></span>
+            </div>
         </header>
 
         <main>
@@ -130,7 +136,7 @@
                     <h4>Boolean Options:</h4>
                     <div id="existingBooleanOptions"></div>
                     <div class="add-new-option">
-                        <input type="text" id="newBooleanOption" placeholder="New boolean option">
+                        <input type="text" id="newBooleanOption" placeholder="Type your boolean option (quotes added automatically)">
                         <button onclick="addNewBooleanOption()">Add Option</button>
                     </div>
                 </div>
