@@ -45,6 +45,9 @@ let categoryData = {
 
 let currentSearch = [];
 let trainingContent = [];
+let recentlyUsedSearches = [];
+let roles = [];
+let currentRole = null;
 let selectedCategory = null;
 let currentSubcategory = null;
 let currentSubSubcategory = null;
@@ -72,53 +75,10 @@ document.addEventListener('DOMContentLoaded', function() {
     renderAll();
     updateDataStatus();
     
-    // Add Enter key support for new boolean option input
-    document.getElementById('newBooleanOption').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            addNewBooleanOption();
-        }
-    });
+
     
-    // Add opening quote when user starts typing
-    document.getElementById('newBooleanOption').addEventListener('input', function(event) {
-        const input = event.target;
-        const value = input.value;
-        
-        // If this is the first character and it's not already a quote, add opening quote
-        if (value.length === 1 && !value.startsWith('"')) {
-            input.value = '"' + value;
-            // Move cursor to end
-            input.setSelectionRange(input.value.length, input.value.length);
-        }
-    });
-    
-    // Add opening quote for boolean-input fields (initial modal)
-    document.addEventListener('input', function(event) {
-        if (event.target.classList.contains('boolean-input')) {
-            const input = event.target;
-            const value = input.value;
-            
-            // If this is the first character and it's not already a quote, add opening quote
-            if (value.length === 1 && !value.startsWith('"')) {
-                input.value = '"' + value;
-                // Move cursor to end
-                input.setSelectionRange(input.value.length, input.value.length);
-            }
-        }
-    });
-    
-    // Add closing quote when boolean-input loses focus
-    document.addEventListener('blur', function(event) {
-        if (event.target.classList.contains('boolean-input')) {
-            const input = event.target;
-            const value = input.value;
-            
-            // Add closing quote if it starts with quote but doesn't end with one
-            if (value.length > 0 && value.startsWith('"') && !value.endsWith('"')) {
-                input.value = value + '"';
-            }
-        }
-    }, true);
+
+
     
     // Update data status every minute
     setInterval(updateDataStatus, 60000);
@@ -253,9 +213,7 @@ function renderTitlesSubcategory(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
-            <div class="add-item-controls">
-                <button onclick="openAddTitleModal('${subcategory}')" class="add-title-btn">Add Boolean Search</button>
-            </div>
+
             <div class="search-filter">
                 <input type="text" id="titleSearch" placeholder="Search titles..." onkeyup="filterTitles('${subcategory}')">
             </div>
@@ -318,11 +276,8 @@ function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategor
     
     contentElement.innerHTML = `
         <div class="category-management">
-            <div class="add-item-controls">
-                <button onclick="openAddDomainModal('${subcategory}', '${subSubcategory}')" class="add-title-btn">Add Boolean Search</button>
-            </div>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterDomainItems('${subcategory}', '${subSubcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search items..." onkeyup="filterDomainItems('${subcategory}', '${subSubcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderDomainItemsList(items, subcategory, subSubcategory)}
@@ -333,14 +288,13 @@ function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategor
 
 function renderDomainItemsList(items, subcategory, subSubcategory) {
     if (Object.keys(items).length === 0) {
-        return '<p style="color: #7f8c8d; font-style: italic;">No boolean searches added yet.</p>';
+        return '<p style="color: #7f8c8d; font-style: italic;">No items added yet.</p>';
     }
     
     return Object.keys(items).map((title, index) => `
         <div class="item-row">
             <span class="item-text">${title}</span>
             <div class="item-actions">
-                <button class="boolean-options-btn" onclick="openDomainDetailsModal('${subcategory}', '${subSubcategory}', '${title}')">Boolean Options</button>
                 <button class="edit-btn" onclick="editDomainTitle('${subcategory}', '${subSubcategory}', '${title}')">Edit</button>
                 <button class="delete-btn" onclick="deleteDomainTitle('${subcategory}', '${subSubcategory}', '${title}')">Delete</button>
             </div>
@@ -464,69 +418,9 @@ function deleteDomainTitle(subcategory, subSubcategory, titleName) {
     }
 }
 
-function removeBooleanOptionFromDomain(subcategory, subSubcategory, titleName, option) {
-    if (confirm('Are you sure you want to remove this boolean option?')) {
-        categoryData['Domain'][subcategory][subSubcategory][titleName] = categoryData['Domain'][subcategory][subSubcategory][titleName].filter(opt => opt !== option);
-        saveData();
-        openDomainDetailsModal(subcategory, subSubcategory, titleName);
-    }
-}
 
-function makeDomainTitleEditable(titleElement) {
-    const currentTitle = titleElement.textContent;
-    const originalTitle = titleElement.getAttribute('data-original-title');
-    const subcategory = titleElement.getAttribute('data-subcategory');
-    const subSubcategory = titleElement.getAttribute('data-sub-subcategory');
-    
-    titleElement.classList.add('editing');
-    titleElement.innerHTML = `<input type="text" value="${currentTitle}" onblur="saveDomainTitleEdit(this, '${subcategory}', '${subSubcategory}', '${originalTitle}')" onkeypress="handleDomainTitleEditKeypress(event, this, '${subcategory}', '${subSubcategory}', '${originalTitle}')">`;
-    
-    const input = titleElement.querySelector('input');
-    input.focus();
-    input.select();
-}
 
-function saveDomainTitleEdit(inputElement, subcategory, subSubcategory, originalTitle) {
-    const newTitle = inputElement.value.trim();
-    const titleElement = inputElement.parentElement;
-    
-    if (newTitle && newTitle !== originalTitle) {
-        // Update the title in the data structure
-        const booleanOptions = categoryData['Domain'][subcategory][subSubcategory][originalTitle];
-        delete categoryData['Domain'][subcategory][subSubcategory][originalTitle];
-        categoryData['Domain'][subcategory][subSubcategory][newTitle] = booleanOptions;
-        
-        // Update the display
-        titleElement.textContent = newTitle;
-        titleElement.setAttribute('data-original-title', newTitle);
-        
-        // Update all references in the boolean options
-        const booleanOptionItems = document.querySelectorAll('.boolean-option-item .delete-btn');
-        booleanOptionItems.forEach(btn => {
-            const onclick = btn.getAttribute('onclick');
-            if (onclick) {
-                btn.setAttribute('onclick', onclick.replace(originalTitle, newTitle));
-            }
-        });
-        
-        saveData();
-    } else {
-        // Revert to original title
-        titleElement.textContent = originalTitle;
-    }
-    
-    titleElement.classList.remove('editing');
-}
 
-function handleDomainTitleEditKeypress(event, inputElement, subcategory, subSubcategory, originalTitle) {
-    if (event.key === 'Enter') {
-        inputElement.blur();
-    } else if (event.key === 'Escape') {
-        const titleElement = inputElement.parentElement;
-        titleElement.textContent = originalTitle;
-        titleElement.classList.remove('editing');
-    }
-}
 
 // Industry Functions
 function renderIndustrySubcategorySelection(contentElement) {
@@ -553,9 +447,6 @@ function renderIndustrySubcategoryItems(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
-            <div class="add-item-controls">
-                <button onclick="openAddIndustryModal('${subcategory}')" class="add-title-btn">Add Boolean Search</button>
-            </div>
             <div class="search-filter">
                 <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterIndustryItems('${subcategory}')">
             </div>
@@ -658,9 +549,6 @@ function renderContextSubcategoryItems(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
-            <div class="add-item-controls">
-                <button onclick="openAddContextModal('${subcategory}')" class="add-title-btn">Add Boolean Search</button>
-            </div>
             <div class="search-filter">
                 <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterContextItems('${subcategory}')">
             </div>
@@ -731,9 +619,6 @@ function renderCertificationsSubcategoryItems(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
-            <div class="add-item-controls">
-                <button onclick="openAddCertificationsModal('${subcategory}')" class="add-title-btn">Add Boolean Search</button>
-            </div>
             <div class="search-filter">
                 <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterCertificationsItems('${subcategory}')">
             </div>
@@ -840,81 +725,31 @@ function openAddIndustryModal(subcategory) {
     document.getElementById('titleName').value = '';
     document.getElementById('booleanOptionsList').innerHTML = `
         <div class="boolean-option">
-            <input type="text" placeholder="Type your boolean option (quotes added automatically)" class="boolean-input" onkeypress="handleBooleanInputKeypress(event)">
+            <input type="text" placeholder="Boolean option" class="boolean-input" onkeypress="handleBooleanInputKeypress(event)">
             <button type="button" class="remove-option-btn" onclick="removeBooleanOption(this)">Remove</button>
         </div>
     `;
 }
 
+
+
+
 function openAddTitleModal(subcategory) {
     currentSubcategory = subcategory;
     document.getElementById('addTitleModal').style.display = 'block';
     document.getElementById('titleName').value = '';
-    document.getElementById('booleanOptionsList').innerHTML = `
-        <div class="boolean-option">
-            <input type="text" placeholder="Type your boolean option (quotes added automatically)" class="boolean-input" onkeypress="handleBooleanInputKeypress(event)">
-            <button type="button" class="remove-option-btn" onclick="removeBooleanOption(this)">Remove</button>
-        </div>
-    `;
+    
+
 }
 
 function closeModal() {
     document.getElementById('addTitleModal').style.display = 'none';
 }
 
-function addBooleanOption() {
-    const container = document.getElementById('booleanOptionsList');
-    const newOption = document.createElement('div');
-    newOption.className = 'boolean-option';
-    newOption.innerHTML = `
-        <input type="text" placeholder="Type your boolean option (quotes added automatically)" class="boolean-input" onkeypress="handleBooleanInputKeypress(event)">
-        <button type="button" class="remove-option-btn" onclick="removeBooleanOption(this)">Remove</button>
-    `;
-    container.appendChild(newOption);
-}
-
-function handleBooleanInputKeypress(event) {
-    if (event.key === 'Enter') {
-        // Add closing quote to current input before adding new one
-        const input = event.target;
-        const value = input.value;
-        if (value.length > 0 && value.startsWith('"') && !value.endsWith('"')) {
-            input.value = value + '"';
-        }
-        
-        addBooleanOption();
-        // Focus the newly created input
-        setTimeout(() => {
-            const inputs = document.querySelectorAll('.boolean-input');
-            if (inputs.length > 0) {
-                inputs[inputs.length - 1].focus();
-            }
-        }, 10);
-    }
-}
-
-function removeBooleanOption(button) {
-    const options = document.querySelectorAll('.boolean-option');
-    if (options.length > 1) {
-        button.parentElement.remove();
-    }
-}
-
 function saveTitle() {
     const titleName = document.getElementById('titleName').value.trim();
-    const booleanInputs = document.querySelectorAll('.boolean-input');
-    const booleanOptions = Array.from(booleanInputs)
-        .map(input => {
-            let option = input.value.trim();
-            // Add closing quote if it doesn't already have one
-            if (option && !option.endsWith('"')) {
-                option = option + '"';
-            }
-            return option;
-        })
-        .filter(option => option.length > 0);
     
-    if (titleName && booleanOptions.length > 0) {
+    if (titleName) {
         if (currentSubSubcategory) {
             // Save to Domain
             if (!categoryData['Domain'][currentSubcategory]) {
@@ -923,58 +758,33 @@ function saveTitle() {
             if (!categoryData['Domain'][currentSubcategory][currentSubSubcategory]) {
                 categoryData['Domain'][currentSubcategory][currentSubSubcategory] = {};
             }
-            categoryData['Domain'][currentSubcategory][currentSubSubcategory][titleName] = booleanOptions;
+            categoryData['Domain'][currentSubcategory][currentSubSubcategory][titleName] = [];
         } else if (currentIndustrySubcategory) {
             // Save to Industry
             if (!categoryData['Industry'][currentIndustrySubcategory]) {
                 categoryData['Industry'][currentIndustrySubcategory] = {};
             }
-            categoryData['Industry'][currentIndustrySubcategory][titleName] = booleanOptions;
-        } else if (currentContextSubcategory) {
-            // Save to Context
-            if (!categoryData['Context'][currentContextSubcategory]) {
-                categoryData['Context'][currentContextSubcategory] = {};
-            }
-            categoryData['Context'][currentContextSubcategory][titleName] = booleanOptions;
-        } else if (currentCertificationsSubcategory) {
-            // Save to Certifications & Clearances
-            if (!categoryData['Certifications & Clearances'][currentCertificationsSubcategory]) {
-                categoryData['Certifications & Clearances'][currentCertificationsSubcategory] = {};
-            }
-            categoryData['Certifications & Clearances'][currentCertificationsSubcategory][titleName] = booleanOptions;
+            categoryData['Industry'][currentIndustrySubcategory][titleName] = [];
         } else {
             // Save to Titles
-            categoryData['Titles'][currentSubcategory][titleName] = booleanOptions;
+            categoryData['Titles'][currentSubcategory][titleName] = [];
         }
         saveData();
         closeModal();
         renderCategoryView();
         renderAll();
         currentIndustrySubcategory = null; // Reset after save
-        currentContextSubcategory = null; // Reset after save
-        currentCertificationsSubcategory = null; // Reset after save
     } else {
-        alert('Please enter a title name and at least one boolean option.');
+        alert('Please enter a title name.');
     }
 }
 
 function openTitleDetailsModal(subcategory, titleName) {
-    const booleanOptions = categoryData['Titles'][subcategory][titleName] || [];
-    
     document.getElementById('titleDetailsHeader').textContent = 'Title Details';
     document.getElementById('selectedTitleName').textContent = titleName;
     document.getElementById('selectedTitleName').setAttribute('data-original-title', titleName);
     document.getElementById('selectedTitleName').setAttribute('data-subcategory', subcategory);
     
-    const existingOptions = document.getElementById('existingBooleanOptions');
-    existingOptions.innerHTML = booleanOptions.map(option => `
-        <div class="boolean-option-item">
-            <span>${option}</span>
-            <button class="delete-btn" onclick="removeBooleanOptionFromTitle('${subcategory}', '${titleName}', '${option}')">Delete</button>
-        </div>
-    `).join('');
-    
-    document.getElementById('newBooleanOption').value = '';
     document.getElementById('titleDetailsModal').style.display = 'block';
     
     // Add click event to make title editable
@@ -988,69 +798,7 @@ function closeTitleDetailsModal() {
     document.getElementById('titleDetailsModal').style.display = 'none';
 }
 
-function addNewBooleanOption() {
-    let newOption = document.getElementById('newBooleanOption').value.trim();
-    const titleName = document.getElementById('selectedTitleName').textContent;
-    const subSubcategory = document.getElementById('selectedTitleName').getAttribute('data-sub-subcategory');
-    const subcategory = document.getElementById('selectedTitleName').getAttribute('data-subcategory');
-    
-    if (newOption) {
-        // Add closing quote if it doesn't already have one
-        if (!newOption.endsWith('"')) {
-            newOption = newOption + '"';
-        }
-        
-        if (subSubcategory) {
-            // Add to Domain
-            if (!categoryData['Domain'][subcategory][subSubcategory][titleName]) {
-                categoryData['Domain'][subcategory][subSubcategory][titleName] = [];
-            }
-            categoryData['Domain'][subcategory][subSubcategory][titleName].push(newOption);
-            saveData();
-            openDomainDetailsModal(subcategory, subSubcategory, titleName);
-        } else if (currentIndustrySubcategory && subcategory === currentIndustrySubcategory) {
-            // Add to Industry
-            if (!categoryData['Industry'][subcategory][titleName]) {
-                categoryData['Industry'][subcategory][titleName] = [];
-            }
-            categoryData['Industry'][subcategory][titleName].push(newOption);
-            saveData();
-            openIndustryDetailsModal(subcategory, titleName);
-        } else if (currentContextSubcategory && subcategory === currentContextSubcategory) {
-            // Add to Context
-            if (!categoryData['Context'][subcategory][titleName]) {
-                categoryData['Context'][subcategory][titleName] = [];
-            }
-            categoryData['Context'][subcategory][titleName].push(newOption);
-            saveData();
-            openContextDetailsModal(subcategory, titleName);
-        } else if (currentCertificationsSubcategory && subcategory === currentCertificationsSubcategory) {
-            // Add to Certifications & Clearances
-            if (!categoryData['Certifications & Clearances'][subcategory][titleName]) {
-                categoryData['Certifications & Clearances'][subcategory][titleName] = [];
-            }
-            categoryData['Certifications & Clearances'][subcategory][titleName].push(newOption);
-            saveData();
-            openCertificationsDetailsModal(subcategory, titleName);
-        } else {
-            // Add to Titles
-            if (!categoryData['Titles'][currentSubcategory][titleName]) {
-                categoryData['Titles'][currentSubcategory][titleName] = [];
-            }
-            categoryData['Titles'][currentSubcategory][titleName].push(newOption);
-            saveData();
-            openTitleDetailsModal(currentSubcategory, titleName);
-        }
-    }
-}
 
-function removeBooleanOptionFromTitle(subcategory, titleName, option) {
-    if (confirm('Are you sure you want to remove this boolean option?')) {
-        categoryData['Titles'][subcategory][titleName] = categoryData['Titles'][subcategory][titleName].filter(opt => opt !== option);
-        saveData();
-        openTitleDetailsModal(subcategory, titleName);
-    }
-}
 
 function makeTitleEditable(titleElement) {
     const currentTitle = titleElement.textContent;
@@ -1154,56 +902,7 @@ function deleteIndustryTitle(subcategory, titleName) {
     }
 }
 
-function removeBooleanOptionFromIndustry(subcategory, titleName, option) {
-    if (confirm('Are you sure you want to remove this boolean option?')) {
-        categoryData['Industry'][subcategory][titleName] = categoryData['Industry'][subcategory][titleName].filter(opt => opt !== option);
-        saveData();
-        openIndustryDetailsModal(subcategory, titleName);
-    }
-}
 
-function makeIndustryTitleEditable(titleElement) {
-    const currentTitle = titleElement.textContent;
-    const originalTitle = titleElement.getAttribute('data-original-title');
-    const subcategory = titleElement.getAttribute('data-subcategory');
-    
-    titleElement.classList.add('editing');
-    titleElement.innerHTML = `<input type="text" value="${currentTitle}" onblur="saveIndustryTitleEdit(this, '${subcategory}', '${originalTitle}')" onkeypress="handleIndustryTitleEditKeypress(event, this, '${subcategory}', '${originalTitle}')">`;
-    
-    const input = titleElement.querySelector('input');
-    input.focus();
-    input.select();
-}
-
-function saveIndustryTitleEdit(inputElement, subcategory, originalTitle) {
-    const newTitle = inputElement.value.trim();
-    const titleElement = inputElement.parentElement;
-    
-    if (newTitle && newTitle !== originalTitle) {
-        const booleanOptions = categoryData['Industry'][subcategory][originalTitle];
-        delete categoryData['Industry'][subcategory][originalTitle];
-        categoryData['Industry'][subcategory][newTitle] = booleanOptions;
-        
-        titleElement.textContent = newTitle;
-        titleElement.setAttribute('data-original-title', newTitle);
-        
-        saveData();
-    } else {
-        titleElement.textContent = originalTitle;
-    }
-    
-    titleElement.classList.remove('editing');
-}
-
-function handleIndustryTitleEditKeypress(event, inputElement, subcategory, originalTitle) {
-    if (event.key === 'Enter') {
-        inputElement.blur();
-    } else if (event.key === 'Escape') {
-        const titleElement = inputElement.parentElement;
-        titleElement.textContent = originalTitle;
-        titleElement.classList.remove('editing');
-    }
-}
 
 // Context Modal Functions
 function openAddContextModal(subcategory) {
@@ -1264,61 +963,7 @@ function deleteContextTitle(subcategory, titleName) {
     }
 }
 
-function removeBooleanOptionFromContext(subcategory, titleName, option) {
-    const booleanOptions = categoryData['Context'][subcategory][titleName];
-    const index = booleanOptions.indexOf(option);
-    if (index > -1) {
-        booleanOptions.splice(index, 1);
-        saveData();
-        openContextDetailsModal(subcategory, titleName);
-    }
-}
 
-function makeContextTitleEditable(titleElement) {
-    const originalTitle = titleElement.textContent;
-    const subcategory = titleElement.getAttribute('data-subcategory');
-    
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = originalTitle;
-    input.className = 'title-edit-input';
-    input.style.width = '100%';
-    input.style.padding = '5px';
-    input.style.border = '1px solid #3498db';
-    input.style.borderRadius = '3px';
-    
-    input.addEventListener('blur', () => saveContextTitleEdit(input, subcategory, originalTitle));
-    input.addEventListener('keypress', (event) => handleContextTitleEditKeypress(event, input, subcategory, originalTitle));
-    
-    titleElement.textContent = '';
-    titleElement.appendChild(input);
-    input.focus();
-    input.select();
-}
-
-function saveContextTitleEdit(inputElement, subcategory, originalTitle) {
-    const newTitle = inputElement.value.trim();
-    const titleElement = inputElement.parentElement;
-    
-    if (newTitle && newTitle !== originalTitle) {
-        const booleanOptions = categoryData['Context'][subcategory][originalTitle];
-        delete categoryData['Context'][subcategory][originalTitle];
-        categoryData['Context'][subcategory][newTitle] = booleanOptions;
-        saveData();
-        titleElement.textContent = newTitle;
-        titleElement.setAttribute('data-original-title', newTitle);
-    } else {
-        titleElement.textContent = originalTitle;
-    }
-}
-
-function handleContextTitleEditKeypress(event, inputElement, subcategory, originalTitle) {
-    if (event.key === 'Enter') {
-        saveContextTitleEdit(inputElement, subcategory, originalTitle);
-    } else if (event.key === 'Escape') {
-        inputElement.parentElement.textContent = originalTitle;
-    }
-}
 
 // Certifications & Clearances Modal Functions
 function openAddCertificationsModal(subcategory) {
@@ -1379,61 +1024,7 @@ function deleteCertificationsTitle(subcategory, titleName) {
     }
 }
 
-function removeBooleanOptionFromCertifications(subcategory, titleName, option) {
-    const booleanOptions = categoryData['Certifications & Clearances'][subcategory][titleName];
-    const index = booleanOptions.indexOf(option);
-    if (index > -1) {
-        booleanOptions.splice(index, 1);
-        saveData();
-        openCertificationsDetailsModal(subcategory, titleName);
-    }
-}
 
-function makeCertificationsTitleEditable(titleElement) {
-    const originalTitle = titleElement.textContent;
-    const subcategory = titleElement.getAttribute('data-subcategory');
-    
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = originalTitle;
-    input.className = 'title-edit-input';
-    input.style.width = '100%';
-    input.style.padding = '5px';
-    input.style.border = '1px solid #3498db';
-    input.style.borderRadius = '3px';
-    
-    input.addEventListener('blur', () => saveCertificationsTitleEdit(input, subcategory, originalTitle));
-    input.addEventListener('keypress', (event) => handleCertificationsTitleEditKeypress(event, input, subcategory, originalTitle));
-    
-    titleElement.textContent = '';
-    titleElement.appendChild(input);
-    input.focus();
-    input.select();
-}
-
-function saveCertificationsTitleEdit(inputElement, subcategory, originalTitle) {
-    const newTitle = inputElement.value.trim();
-    const titleElement = inputElement.parentElement;
-    
-    if (newTitle && newTitle !== originalTitle) {
-        const booleanOptions = categoryData['Certifications & Clearances'][subcategory][originalTitle];
-        delete categoryData['Certifications & Clearances'][subcategory][originalTitle];
-        categoryData['Certifications & Clearances'][subcategory][newTitle] = booleanOptions;
-        saveData();
-        titleElement.textContent = newTitle;
-        titleElement.setAttribute('data-original-title', newTitle);
-    } else {
-        titleElement.textContent = originalTitle;
-    }
-}
-
-function handleCertificationsTitleEditKeypress(event, inputElement, subcategory, originalTitle) {
-    if (event.key === 'Enter') {
-        saveCertificationsTitleEdit(inputElement, subcategory, originalTitle);
-    } else if (event.key === 'Escape') {
-        inputElement.parentElement.textContent = originalTitle;
-    }
-}
 
 // Debug function to check current data
 function debugCurrentData() {
@@ -1551,77 +1142,811 @@ function filterItems(category) {
 
 
 
-// Builder Section
+// Boolean Builder Section
 function setupBuilderSection() {
-    const addToSearchBtn = document.getElementById('addToSearch');
-    const clearSearchBtn = document.getElementById('clearSearch');
-    const copySearchBtn = document.getElementById('copySearch');
+    // Setup role dashboard
+    const addRoleBtn = document.getElementById('addNewRoleBtn');
+    const backBtn = document.getElementById('backToDashboardBtn');
+    const roleSearchInput = document.getElementById('roleSearch');
     
-    addToSearchBtn.addEventListener('click', addToSearch);
-    clearSearchBtn.addEventListener('click', clearSearch);
-    copySearchBtn.addEventListener('click', copySearch);
+    addRoleBtn.addEventListener('click', addNewRole);
+    backBtn.addEventListener('click', backToDashboard);
+    roleSearchInput.addEventListener('input', filterRoles);
+    
+    // Setup operator buttons
+    const operatorButtons = document.querySelectorAll('.operator-btn');
+    operatorButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            insertAtCursor(this.getAttribute('data-value'));
+        });
+    });
+    
+    // Setup copy and clear buttons
+    const copyBtn = document.getElementById('copyBooleanString');
+    const clearBtn = document.getElementById('clearBooleanString');
+    
+    copyBtn.addEventListener('click', copyBooleanString);
+    clearBtn.addEventListener('click', clearBooleanString);
+    
+    // Render roles dashboard
+    renderRolesDashboard();
 }
 
-function addToSearch() {
-    const select = document.getElementById('builderCategory');
-    const category = select.value;
+// Role Management Functions
+function addNewRole() {
+    // Clear previous values
+    document.getElementById('newRoleTitle').value = '';
+    document.getElementById('newRoleId').value = '';
+    document.getElementById('newRoleClient').value = '';
     
-    if (category) {
-        let keywords = [];
+    // Show the modal
+    document.getElementById('newRoleModal').style.display = 'block';
+}
+
+function closeNewRoleModal() {
+    document.getElementById('newRoleModal').style.display = 'none';
+}
+
+function createNewRole() {
+    const title = document.getElementById('newRoleTitle').value.trim();
+    const roleId = document.getElementById('newRoleId').value.trim();
+    const client = document.getElementById('newRoleClient').value;
+    
+    if (!title) {
+        alert('Please enter a role title.');
+        return;
+    }
+    
+    // Create role name from title and ID if provided
+    let roleName = title;
+    if (roleId) {
+        roleName = `${title} - ${roleId}`;
+    }
+    
+    const newRole = {
+        id: Date.now().toString(),
+        name: roleName,
+        title: title,
+        roleId: roleId,
+        client: client,
+        booleanString: '',
+        recentlyUsedSearches: [],
+        selectedKeywords: [],
+        createdAt: new Date().toISOString()
+    };
+    
+    roles.push(newRole);
+    saveData();
+    renderRolesDashboard();
+    closeNewRoleModal();
+}
+
+function createNewRoleAndGoToBuilder() {
+    const title = document.getElementById('newRoleTitle').value.trim();
+    const roleId = document.getElementById('newRoleId').value.trim();
+    const client = document.getElementById('newRoleClient').value;
+    
+    if (!title) {
+        alert('Please enter a role title.');
+        return;
+    }
+    
+    // Create role name from title and ID if provided
+    let roleName = title;
+    if (roleId) {
+        roleName = `${title} - ${roleId}`;
+    }
+    
+    const newRole = {
+        id: Date.now().toString(),
+        name: roleName,
+        title: title,
+        roleId: roleId,
+        client: client,
+        booleanString: '',
+        recentlyUsedSearches: [],
+        selectedKeywords: [],
+        createdAt: new Date().toISOString()
+    };
+    
+    roles.push(newRole);
+    saveData();
+    
+    // Set as current role and open keyword selector
+    currentRole = newRole;
+    closeNewRoleModal();
+    openKeywordSelector();
+}
+
+function openKeywordSelector() {
+    document.getElementById('keywordSelectorModal').style.display = 'block';
+    renderKeywordSelector();
+}
+
+function closeKeywordSelectorModal() {
+    document.getElementById('keywordSelectorModal').style.display = 'none';
+}
+
+function renderKeywordSelector() {
+    const container = document.querySelector('.keyword-categories');
+    if (!container) {
+        console.error('Keyword categories container not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    console.log('Rendering keyword selector...');
+    
+    // Get all categories from the directory
+    const categories = [
+        { name: 'Titles', key: 'titles' },
+        { name: 'Domain', key: 'domain' },
+        { name: 'Industry', key: 'industry' },
+        { name: 'Context', key: 'context' },
+        { name: 'Certifications & Clearances', key: 'certifications' }
+    ];
+    
+    categories.forEach(category => {
+        const categorySection = document.createElement('div');
+        categorySection.className = 'keyword-category-section';
         
-        if (category === 'Titles') {
-            // Get all titles from both Technical and Functional
-            const technicalTitles = Object.keys(categoryData['Titles']['Technical'] || {});
-            const functionalTitles = Object.keys(categoryData['Titles']['Functional'] || {});
-            keywords = [...technicalTitles, ...functionalTitles];
-        } else if (category === 'Domain') {
-            // Get all items from all Domain subcategories and sub-subcategories
-            Object.keys(categoryData['Domain'] || {}).forEach(subcategory => {
-                Object.keys(categoryData['Domain'][subcategory] || {}).forEach(subSubcategory => {
-                    keywords = [...keywords, ...(categoryData['Domain'][subcategory][subSubcategory] || [])];
-                });
-            });
-        } else if (category === 'Context') {
-            // Get all items from all Context subcategories
-            Object.keys(categoryData['Context'] || {}).forEach(subcategory => {
-                keywords = [...keywords, ...Object.keys(categoryData['Context'][subcategory] || {})];
-            });
-        } else if (category === 'Industry') {
-            // Get all items from all Industry subcategories
-            Object.keys(categoryData['Industry'] || {}).forEach(subcategory => {
-                keywords = [...keywords, ...Object.keys(categoryData['Industry'][subcategory] || {})];
-            });
-        } else if (category === 'Certifications & Clearances') {
-            // Get all items from all Certifications & Clearances subcategories
-            Object.keys(categoryData['Certifications & Clearances'] || {}).forEach(subcategory => {
-                keywords = [...keywords, ...Object.keys(categoryData['Certifications & Clearances'][subcategory] || {})];
-            });
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'keyword-category-header';
+        categoryHeader.innerHTML = `
+            <h4>${category.name}</h4>
+            <div class="category-actions">
+                <button class="select-all-category-btn" onclick="selectAllCategorySearches('${category.key}')">Select All Category</button>
+                <span class="expand-icon">▼</span>
+            </div>
+        `;
+        
+        const categoryContent = document.createElement('div');
+        categoryContent.className = 'keyword-category-content';
+        
+        // Add click handler to expand/collapse
+        categoryHeader.addEventListener('click', () => {
+            categoryContent.classList.toggle('expanded');
+            const icon = categoryHeader.querySelector('.expand-icon');
+            icon.textContent = categoryContent.classList.contains('expanded') ? '▲' : '▼';
+        });
+        
+        // Render subcategories and boolean searches
+        renderCategoryBooleanSearches(categoryContent, category.key);
+        
+        categorySection.appendChild(categoryHeader);
+        categorySection.appendChild(categoryContent);
+        container.appendChild(categorySection);
+    });
+    
+    console.log('Keyword selector rendering complete');
+}
+
+function renderCategoryBooleanSearches(container, categoryKey) {
+    // Get the current data from localStorage
+    const savedData = localStorage.getItem('plugINData');
+    if (!savedData) {
+        console.log('No data found in localStorage');
+        // Show default subcategories even if no data exists
+        renderDefaultSubcategories(container, categoryKey);
+        return;
+    }
+    
+    const data = JSON.parse(savedData);
+    console.log('Loaded data:', data);
+    
+    const categoryData = data[categoryKey];
+    if (!categoryData) {
+        console.log(`No data found for category: ${categoryKey}`);
+        // Show default subcategories even if no data exists
+        renderDefaultSubcategories(container, categoryKey);
+        return;
+    }
+    
+    console.log(`Rendering ${categoryKey} with data:`, categoryData);
+    
+    Object.keys(categoryData).forEach(subcategory => {
+        console.log(`Processing subcategory: ${subcategory}`);
+        
+        const subcategoryDiv = document.createElement('div');
+        subcategoryDiv.className = 'keyword-subcategory';
+        
+        const subcategoryHeader = document.createElement('div');
+        subcategoryHeader.className = 'keyword-subcategory-header';
+        subcategoryHeader.innerHTML = `
+            <h5>${subcategory}</h5>
+            <button class="select-all-btn" onclick="selectAllBooleanSearches('${categoryKey}', '${subcategory}')">Select All</button>
+        `;
+        
+        const booleanSearchList = document.createElement('div');
+        booleanSearchList.className = 'keyword-list';
+        
+        // Get boolean searches from this subcategory
+        const booleanSearches = getBooleanSearchesFromSubcategory(categoryKey, subcategory);
+        console.log(`Found ${booleanSearches.length} boolean searches for ${subcategory}:`, booleanSearches);
+        
+        if (booleanSearches.length === 0) {
+            const noSearchesMsg = document.createElement('div');
+            noSearchesMsg.style.padding = '10px';
+            noSearchesMsg.style.color = '#7f8c8d';
+            noSearchesMsg.style.fontStyle = 'italic';
+            noSearchesMsg.textContent = 'No boolean searches found in this subcategory.';
+            booleanSearchList.appendChild(noSearchesMsg);
         } else {
-            keywords = categoryData[category] || [];
+            booleanSearches.forEach(search => {
+                const searchItem = document.createElement('div');
+                searchItem.className = 'keyword-checkbox-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `search-${categoryKey}-${subcategory}-${search.title}`;
+                checkbox.value = search.title;
+                checkbox.dataset.category = categoryKey;
+                checkbox.dataset.subcategory = subcategory;
+                checkbox.dataset.searchData = JSON.stringify(search);
+                
+                const label = document.createElement('label');
+                label.htmlFor = `search-${categoryKey}-${subcategory}-${search.title}`;
+                label.textContent = search.title;
+                
+                searchItem.appendChild(checkbox);
+                searchItem.appendChild(label);
+                booleanSearchList.appendChild(searchItem);
+            });
         }
         
-        if (keywords.length > 0) {
-            currentSearch.push({
-                category: category,
-                keywords: keywords
+        subcategoryDiv.appendChild(subcategoryHeader);
+        subcategoryDiv.appendChild(booleanSearchList);
+        container.appendChild(subcategoryDiv);
+    });
+}
+
+function renderDefaultSubcategories(container, categoryKey) {
+    const defaultSubcategories = {
+        'titles': ['Technical', 'Functional'],
+        'domain': ['Agile & Scrum', 'AI & Machine Learning', 'Architecture', 'Change & Transformation', 'Cyber Security', 'Data & Analytics', 'DevOps & Platform Engineering', 'Digital', 'Financial Crime', 'Infrastructure & Cloud', 'Payments & Banking Tech', 'Product & Design', 'Project Services', 'Risk & Compliance', 'Software Engineering', 'Testing & QA'],
+        'industry': ['Insurance', 'Bank', 'Superannuation', 'Financial'],
+        'context': ['Context'],
+        'certifications': ['Certifications & Clearances']
+    };
+    
+    const subcategories = defaultSubcategories[categoryKey] || [];
+    
+    subcategories.forEach(subcategory => {
+        const subcategoryDiv = document.createElement('div');
+        subcategoryDiv.className = 'keyword-subcategory';
+        
+        const subcategoryHeader = document.createElement('div');
+        subcategoryHeader.className = 'keyword-subcategory-header';
+        subcategoryHeader.innerHTML = `
+            <h5>${subcategory}</h5>
+            <button class="select-all-btn" onclick="selectAllBooleanSearches('${categoryKey}', '${subcategory}')">Select All</button>
+        `;
+        
+        const booleanSearchList = document.createElement('div');
+        booleanSearchList.className = 'keyword-list';
+        
+        // Add a message for empty subcategories
+        const noSearchesMsg = document.createElement('div');
+        noSearchesMsg.style.padding = '10px';
+        noSearchesMsg.style.color = '#7f8c8d';
+        noSearchesMsg.style.fontStyle = 'italic';
+        noSearchesMsg.textContent = 'No boolean searches found in this subcategory.';
+        booleanSearchList.appendChild(noSearchesMsg);
+        
+        subcategoryDiv.appendChild(subcategoryHeader);
+        subcategoryDiv.appendChild(booleanSearchList);
+        container.appendChild(subcategoryDiv);
+    });
+}
+
+function getBooleanSearchesFromSubcategory(categoryKey, subcategory) {
+    // Get the current data from localStorage
+    const savedData = localStorage.getItem('plugINData');
+    if (!savedData) return [];
+    
+    const data = JSON.parse(savedData);
+    const categoryData = data[categoryKey];
+    if (!categoryData || !categoryData[subcategory]) return [];
+    
+    const booleanSearches = [];
+    categoryData[subcategory].forEach(item => {
+        if (item.booleanOptions && item.booleanOptions.length > 0) {
+            booleanSearches.push({
+                title: item.title,
+                booleanOptions: item.booleanOptions,
+                category: categoryKey,
+                subcategory: subcategory
             });
-            select.value = '';
-            renderSearchBuilder();
-            updateSearchString();
+        }
+    });
+    
+    return booleanSearches;
+}
+
+function selectAllBooleanSearches(categoryKey, subcategory) {
+    const checkboxes = document.querySelectorAll(`input[data-category="${categoryKey}"][data-subcategory="${subcategory}"]`);
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !allChecked;
+    });
+}
+
+function selectAllCategorySearches(categoryKey) {
+    const checkboxes = document.querySelectorAll(`input[data-category="${categoryKey}"]`);
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !allChecked;
+    });
+}
+
+function saveSelectedKeywords() {
+    const selectedBooleanSearches = [];
+    const checkboxes = document.querySelectorAll('.keyword-checkbox-item input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const searchData = JSON.parse(checkbox.dataset.searchData);
+        selectedBooleanSearches.push(searchData);
+    });
+    
+    if (currentRole) {
+        currentRole.selectedBooleanSearches = selectedBooleanSearches;
+        saveData();
+    }
+    
+    closeKeywordSelectorModal();
+    
+    // Go to boolean builder
+    document.getElementById('roleDashboard').style.display = 'none';
+    document.getElementById('booleanBuilder').style.display = 'block';
+    document.getElementById('currentRoleTitle').textContent = `Boolean Builder - ${currentRole.name}`;
+    
+    // Load role-specific data
+    document.getElementById('booleanString').value = currentRole.booleanString || '';
+    recentlyUsedSearches = currentRole.recentlyUsedSearches || [];
+    
+    // Render role-specific content
+    renderKeywordsFromDirectory();
+    renderRecentlyUsedSearches();
+    renderSelectedBooleanSearches();
+}
+
+function renderSelectedBooleanSearches() {
+    const container = document.getElementById('keywordsContainer');
+    if (!currentRole || !currentRole.selectedBooleanSearches || currentRole.selectedBooleanSearches.length === 0) {
+        return;
+    }
+    
+    // Add selected boolean searches section at the top
+    const selectedSection = document.createElement('div');
+    selectedSection.className = 'keyword-category';
+    selectedSection.innerHTML = `
+        <h4>Selected Boolean Searches</h4>
+        <div class="keyword-list">
+            ${currentRole.selectedBooleanSearches.map(search => `
+                <div class="boolean-search-group">
+                    <div class="search-title">${search.title}</div>
+                    <div class="search-options">
+                        ${search.booleanOptions.map(option => `
+                            <button class="keyword-btn" onclick="insertAtCursor('${option.replace(/'/g, "\\'")}')">${option}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    // Insert at the beginning of the container
+    container.insertBefore(selectedSection, container.firstChild);
+}
+
+function renderRolesDashboard(searchTerm = '') {
+    const container = document.getElementById('rolesContainer');
+    container.innerHTML = '';
+    
+    // Filter roles based on search term
+    const filteredRoles = searchTerm 
+        ? roles.filter(role => 
+            role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (role.booleanString && role.booleanString.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+        : roles;
+    
+    if (roles.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #7f8c8d; font-style: italic; grid-column: 1 / -1;">
+                <p>No roles created yet.</p>
+                <p>Click "Add New Role" to get started!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    if (filteredRoles.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #7f8c8d; font-style: italic; grid-column: 1 / -1;">
+                <p>No roles found matching "${searchTerm}".</p>
+                <p>Try a different search term.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    filteredRoles.forEach(role => {
+        const roleCard = document.createElement('div');
+        roleCard.className = 'role-card';
+        
+        const lastModified = role.lastModified ? new Date(role.lastModified).toLocaleDateString() : 'Never';
+        const searchCount = role.recentlyUsedSearches ? role.recentlyUsedSearches.length : 0;
+        
+        // Highlight search term in role name if it matches
+        let displayName = role.name;
+        if (searchTerm && role.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            displayName = role.name.replace(regex, '<mark>$1</mark>');
+        }
+        
+        roleCard.innerHTML = `
+            <div class="role-title">${displayName}</div>
+            <div class="role-info">
+                Last modified: ${lastModified}<br>
+                Recent searches: ${searchCount}
+            </div>
+            <div class="role-actions">
+                <button class="role-action-btn open-role-btn" onclick="openRole('${role.id}')">Open</button>
+                <button class="role-action-btn rename-role-btn" onclick="renameRole('${role.id}')">Rename</button>
+                <button class="role-action-btn delete-role-btn" onclick="deleteRole('${role.id}')">Delete</button>
+            </div>
+        `;
+        
+        container.appendChild(roleCard);
+    });
+}
+
+function filterRoles() {
+    const searchTerm = document.getElementById('roleSearch').value.trim();
+    renderRolesDashboard(searchTerm);
+}
+
+function openRole(roleId) {
+    const role = roles.find(r => r.id === roleId);
+    if (role) {
+        currentRole = role;
+        
+        // Switch to boolean builder view
+        document.getElementById('roleDashboard').style.display = 'none';
+        document.getElementById('booleanBuilder').style.display = 'block';
+        
+        // Update title
+        document.getElementById('currentRoleTitle').textContent = `Boolean Builder - ${role.name}`;
+        
+        // Load role-specific data
+        document.getElementById('booleanString').value = role.booleanString || '';
+        recentlyUsedSearches = role.recentlyUsedSearches || [];
+        
+        // Render role-specific content
+        renderKeywordsFromDirectory();
+        renderRecentlyUsedSearches();
+        renderSelectedBooleanSearches();
+    }
+}
+
+function backToDashboard() {
+    // Save current role data
+    if (currentRole) {
+        currentRole.booleanString = document.getElementById('booleanString').value;
+        currentRole.recentlyUsedSearches = recentlyUsedSearches;
+        currentRole.lastModified = new Date().toISOString();
+        saveData();
+    }
+    
+    // Switch back to dashboard
+    document.getElementById('roleDashboard').style.display = 'block';
+    document.getElementById('booleanBuilder').style.display = 'none';
+    
+    // Reset current role
+    currentRole = null;
+    recentlyUsedSearches = [];
+    
+    // Re-render dashboard
+    renderRolesDashboard();
+}
+
+function renameRole(roleId) {
+    const role = roles.find(r => r.id === roleId);
+    if (role) {
+        const newName = prompt('Enter new name for this role:', role.name);
+        if (newName && newName.trim() && newName !== role.name) {
+            role.name = newName.trim();
+            role.lastModified = new Date().toISOString();
+            saveData();
+            renderRolesDashboard();
         }
     }
 }
 
-function clearSearch() {
-    currentSearch = [];
-    renderSearchBuilder();
-    updateSearchString();
+function deleteRole(roleId) {
+    const role = roles.find(r => r.id === roleId);
+    if (role) {
+        if (confirm(`Are you sure you want to delete the role "${role.name}"? This action cannot be undone.`)) {
+            roles = roles.filter(r => r.id !== roleId);
+            saveData();
+            renderRolesDashboard();
+        }
+    }
 }
 
-function copySearch() {
-    const searchString = document.getElementById('searchString');
-    searchString.select();
+// Insert text at cursor position in the boolean string textarea
+function insertAtCursor(text) {
+    const textarea = document.getElementById('booleanString');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    
+    textarea.value = value.substring(0, start) + text + value.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    textarea.focus();
+}
+
+// Copy the boolean string to clipboard
+function copyBooleanString() {
+    const textarea = document.getElementById('booleanString');
+    const searchString = textarea.value.trim();
+    
+    if (searchString) {
+        // Add to recently used searches
+        addToRecentlyUsed(searchString);
+        
+        // Save to current role
+        if (currentRole) {
+            currentRole.booleanString = searchString;
+            currentRole.lastModified = new Date().toISOString();
+            saveData();
+        }
+        
+        // Copy to clipboard
+        textarea.select();
     document.execCommand('copy');
+        
+        // Show feedback
+        const copyBtn = document.getElementById('copyBooleanString');
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✅ Copied!';
+        copyBtn.style.backgroundColor = '#27ae60';
+        
+        setTimeout(() => {
+            copyBtn.textContent = originalText;
+            copyBtn.style.backgroundColor = '#27ae60';
+        }, 2000);
+    } else {
+        alert('Please enter a search string before copying.');
+    }
+}
+
+// Clear the boolean string
+function clearBooleanString() {
+    if (confirm('Are you sure you want to clear the boolean string?')) {
+        document.getElementById('booleanString').value = '';
+    }
+}
+
+// Add search to recently used
+function addToRecentlyUsed(searchString) {
+    // Remove if already exists (to move to top)
+    recentlyUsedSearches = recentlyUsedSearches.filter(item => item.search !== searchString);
+    
+    // Add to beginning of array
+    recentlyUsedSearches.unshift({
+        search: searchString,
+        date: new Date().toISOString()
+    });
+    
+    // Keep only the last 10 searches
+    if (recentlyUsedSearches.length > 10) {
+        recentlyUsedSearches = recentlyUsedSearches.slice(0, 10);
+    }
+    
+    // Save to current role if in role context
+    if (currentRole) {
+        currentRole.recentlyUsedSearches = recentlyUsedSearches;
+        currentRole.lastModified = new Date().toISOString();
+    }
+    
+    saveData();
+    renderRecentlyUsedSearches();
+}
+
+// Render recently used searches
+function renderRecentlyUsedSearches() {
+    const container = document.getElementById('recentlyUsedContainer');
+    container.innerHTML = '';
+    
+    if (recentlyUsedSearches.length === 0) {
+        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic; text-align: center;">No recently used searches. Copy a search to see it here.</p>';
+        return;
+    }
+    
+    recentlyUsedSearches.forEach((item, index) => {
+        const searchDiv = document.createElement('div');
+        searchDiv.className = 'recent-search-item';
+        
+        const searchText = document.createElement('div');
+        searchText.className = 'recent-search-text';
+        searchText.textContent = item.search;
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'recent-search-actions';
+        
+        const useBtn = document.createElement('button');
+        useBtn.className = 'recent-search-btn use-search-btn';
+        useBtn.textContent = 'Use';
+        useBtn.onclick = () => useRecentSearch(item.search);
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'recent-search-btn copy-search-btn';
+        copyBtn.textContent = 'Copy';
+        copyBtn.onclick = () => copyRecentSearch(item.search);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'recent-search-btn delete-search-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => deleteRecentSearch(index);
+        
+        actionsDiv.appendChild(useBtn);
+        actionsDiv.appendChild(copyBtn);
+        actionsDiv.appendChild(deleteBtn);
+        
+        searchDiv.appendChild(searchText);
+        searchDiv.appendChild(actionsDiv);
+        
+        container.appendChild(searchDiv);
+    });
+}
+
+// Use a recent search
+function useRecentSearch(searchString) {
+    document.getElementById('booleanString').value = searchString;
+    document.getElementById('booleanString').focus();
+}
+
+// Copy a recent search to clipboard
+function copyRecentSearch(searchString) {
+    // Create a temporary textarea to copy the text
+    const tempTextarea = document.createElement('textarea');
+    tempTextarea.value = searchString;
+    document.body.appendChild(tempTextarea);
+    tempTextarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempTextarea);
+    
+    // Show feedback
+    const copyBtn = event.target;
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = '✅ Copied!';
+    copyBtn.style.backgroundColor = '#27ae60';
+    
+    setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.backgroundColor = '#f39c12';
+    }, 2000);
+}
+
+// Delete a recent search
+function deleteRecentSearch(index) {
+    if (confirm('Are you sure you want to delete this search from recently used?')) {
+        recentlyUsedSearches.splice(index, 1);
+        saveData();
+        renderRecentlyUsedSearches();
+    }
+}
+
+// Render keywords from directory
+function renderKeywordsFromDirectory() {
+    const container = document.getElementById('keywordsContainer');
+    container.innerHTML = '';
+    
+    // Render Titles
+    renderKeywordCategory(container, 'Titles', 'Titles', () => {
+        const keywords = [];
+        Object.keys(categoryData['Titles']['Technical'] || {}).forEach(title => {
+            const options = categoryData['Titles']['Technical'][title] || [];
+            options.forEach(option => keywords.push(option));
+        });
+        Object.keys(categoryData['Titles']['Functional'] || {}).forEach(title => {
+            const options = categoryData['Titles']['Functional'][title] || [];
+            options.forEach(option => keywords.push(option));
+        });
+        return keywords;
+    });
+    
+    // Render Domain
+    renderKeywordCategory(container, 'Domain', 'Domain', () => {
+        const keywords = [];
+        Object.keys(categoryData['Domain'] || {}).forEach(subcategory => {
+            Object.keys(categoryData['Domain'][subcategory] || {}).forEach(subSubcategory => {
+                Object.keys(categoryData['Domain'][subcategory][subSubcategory] || {}).forEach(title => {
+                    const options = categoryData['Domain'][subcategory][subSubcategory][title] || [];
+                    options.forEach(option => keywords.push(option));
+                });
+            });
+        });
+        return keywords;
+    });
+    
+    // Render Industry
+    renderKeywordCategory(container, 'Industry', 'Industry', () => {
+        const keywords = [];
+        Object.keys(categoryData['Industry'] || {}).forEach(subcategory => {
+            Object.keys(categoryData['Industry'][subcategory] || {}).forEach(title => {
+                const options = categoryData['Industry'][subcategory][title] || [];
+                options.forEach(option => keywords.push(option));
+            });
+        });
+        return keywords;
+    });
+    
+    // Render Context
+    renderKeywordCategory(container, 'Context', 'Context', () => {
+        const keywords = [];
+        Object.keys(categoryData['Context'] || {}).forEach(subcategory => {
+            Object.keys(categoryData['Context'][subcategory] || {}).forEach(title => {
+                const options = categoryData['Context'][subcategory][title] || [];
+                options.forEach(option => keywords.push(option));
+            });
+        });
+        return keywords;
+    });
+    
+    // Render Certifications & Clearances
+    renderKeywordCategory(container, 'Certifications & Clearances', 'Certifications & Clearances', () => {
+        const keywords = [];
+        Object.keys(categoryData['Certifications & Clearances'] || {}).forEach(subcategory => {
+            Object.keys(categoryData['Certifications & Clearances'][subcategory] || {}).forEach(title => {
+                const options = categoryData['Certifications & Clearances'][subcategory][title] || [];
+                options.forEach(option => keywords.push(option));
+            });
+        });
+        return keywords;
+    });
+}
+
+// Render a keyword category
+function renderKeywordCategory(container, categoryName, displayName, getKeywordsFunction) {
+    const keywords = getKeywordsFunction();
+    
+    if (keywords.length > 0) {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'keyword-category';
+        
+        const title = document.createElement('h4');
+        title.textContent = displayName;
+        categoryDiv.appendChild(title);
+        
+        const keywordList = document.createElement('div');
+        keywordList.className = 'keyword-list';
+        
+        // Remove duplicates and sort
+        const uniqueKeywords = [...new Set(keywords)].sort();
+        
+        uniqueKeywords.forEach(keyword => {
+            const keywordBtn = document.createElement('button');
+            keywordBtn.className = 'keyword-btn';
+            keywordBtn.textContent = keyword;
+            keywordBtn.addEventListener('click', function() {
+                // Check if keyword already has quotes
+                if (keyword.startsWith('"') && keyword.endsWith('"')) {
+                    insertAtCursor(keyword);
+                } else {
+                    insertAtCursor(`"${keyword}"`);
+                }
+            });
+            keywordList.appendChild(keywordBtn);
+        });
+        
+        categoryDiv.appendChild(keywordList);
+        container.appendChild(categoryDiv);
+    }
 }
 
 // Trainer Section
@@ -1655,7 +1980,9 @@ function saveTraining() {
 function renderAll() {
     renderCategoryList();
     renderCategorySelects();
-    renderSearchBuilder();
+    renderRolesDashboard();
+    renderKeywordsFromDirectory();
+    renderRecentlyUsedSearches();
     renderTrainingList();
 }
 
@@ -1832,11 +2159,13 @@ function saveData() {
         categories: categories,
         categoryData: categoryData,
         trainingContent: trainingContent,
+        recentlyUsedSearches: recentlyUsedSearches,
+        roles: roles,
         lastSaved: new Date().toISOString()
     };
     
     try {
-        localStorage.setItem('pluginData', JSON.stringify(data));
+    localStorage.setItem('pluginData', JSON.stringify(data));
         console.log('Data saved successfully at:', new Date().toLocaleString());
         updateDataStatus();
     } catch (error) {
@@ -1948,7 +2277,7 @@ function importData() {
 function clearAllData() {
     if (confirm('Are you sure you want to clear ALL data? This action cannot be undone.')) {
         if (confirm('This will delete all your boolean searches, training content, and settings. Are you absolutely sure?')) {
-            localStorage.removeItem('pluginData');
+    localStorage.removeItem('pluginData');
             initializeDefaultData();
             renderAll();
             alert('All data has been cleared.');
@@ -1960,11 +2289,11 @@ function loadData() {
     const savedData = localStorage.getItem('pluginData');
     if (savedData) {
         try {
-            const data = JSON.parse(savedData);
-            categories = data.categories || {
-                primary: ['Titles', 'Domain', 'Industry'],
-                secondary: ['Context', 'Certifications & Clearances']
-            };
+        const data = JSON.parse(savedData);
+        categories = data.categories || {
+            primary: ['Titles', 'Domain', 'Industry'],
+            secondary: ['Context', 'Certifications & Clearances']
+        };
             
             // Load saved data but ensure proper structure
             categoryData = data.categoryData || {};
@@ -2006,6 +2335,8 @@ function loadData() {
             });
             
             trainingContent = data.trainingContent || [];
+            recentlyUsedSearches = data.recentlyUsedSearches || [];
+            roles = data.roles || [];
             
             console.log('Data loaded successfully:', categoryData);
         } catch (error) {
@@ -2025,31 +2356,31 @@ function initializeDefaultData() {
         secondary: ['Context', 'Certifications & Clearances']
     };
     categoryData = {
-        'Titles': { 'Technical': {}, 'Functional': {} },
-        'Domain': {
-            'Agile & Scrum': {},
-            'AI & Machine Learning': {},
-            'Architecture': {},
-            'Change & Transformation': {},
-            'Cyber Security': {},
-            'Data & Analytics': {},
-            'DevOps & Platform Engineering': {},
-            'Digital': {},
-            'Financial Crime': {},
-            'Infrastructure & Cloud': {},
-            'Payments & Banking Tech': {},
-            'Product & Design': {},
-            'Project Services': {},
-            'Risk & Compliance': {},
-            'Software Engineering': {},
-            'Testing & QA': {}
-        },
-        'Industry': {
-            'Insurance': {},
-            'Bank': {},
-            'Superannuation': {},
-            'Financial': {}
-        },
+            'Titles': { 'Technical': {}, 'Functional': {} },
+            'Domain': {
+                'Agile & Scrum': {},
+                'AI & Machine Learning': {},
+                'Architecture': {},
+                'Change & Transformation': {},
+                'Cyber Security': {},
+                'Data & Analytics': {},
+                'DevOps & Platform Engineering': {},
+                'Digital': {},
+                'Financial Crime': {},
+                'Infrastructure & Cloud': {},
+                'Payments & Banking Tech': {},
+                'Product & Design': {},
+                'Project Services': {},
+                'Risk & Compliance': {},
+                'Software Engineering': {},
+                'Testing & QA': {}
+            },
+            'Industry': {
+                'Insurance': {},
+                'Bank': {},
+                'Superannuation': {},
+                'Financial': {}
+            },
         'Context': {},
         'Certifications & Clearances': {
             'Federal Government Clearances': {},
