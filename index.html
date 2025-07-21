@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>PlugIN</h1>
+            <h1>PLUG IN OR PLUG OUT</h1>
             <nav>
                 <button class="nav-btn active" data-section="storage">Storage</button>
                 <button class="nav-btn" data-section="builder">Builder</button>
@@ -165,6 +165,15 @@
                 <div class="title-info">
                     <h4 id="selectedTitleName"></h4>
                 </div>
+                <div class="boolean-options-section">
+                    <h4>Boolean Options:</h4>
+                    <div id="existingBooleanOptions">
+                        <!-- Existing boolean options will be displayed here -->
+                    </div>
+                    <div class="add-new-option">
+                        <input type="text" id="newBooleanOption" placeholder="Add new boolean option and press Enter">
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button onclick="closeTitleDetailsModal()" class="cancel-btn">Close</button>
@@ -229,6 +238,36 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Add Boolean Search Modal -->
+    <div id="addBooleanSearchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Boolean Search</h3>
+                <span class="close" onclick="closeAddBooleanSearchModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="booleanSearchTitle">Title:</label>
+                    <input type="text" id="booleanSearchTitle" placeholder="Enter search title">
+                </div>
+                <div class="form-group">
+                    <label for="booleanSearchInput">Boolean Search Terms:</label>
+                    <input type="text" id="booleanSearchInput" placeholder="Enter search term and press Enter" onkeypress="handleBooleanSearchInputKeypress(event)">
+                </div>
+                <div class="boolean-terms-container">
+                    <h4>Added Terms:</h4>
+                    <div id="booleanTermsList" class="boolean-terms-list">
+                        <!-- Boolean terms will be displayed here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveBooleanSearch()" class="save-btn">Save Search</button>
+                <button onclick="closeAddBooleanSearchModal()" class="cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=4"></script>
 </body>
 </html> 

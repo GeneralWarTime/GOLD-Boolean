@@ -1,4 +1,4 @@
-# PlugIN - Keyword Directory
+# PLUG IN OR PLUG OUT
 
 A web-based application for managing recruitment keywords and boolean searches, organized into categories and subcategories.
 

@@ -255,6 +255,35 @@ nav {
     color: #2c3e50;
 }
 
+.item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.item-title {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.item-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.item-terms .boolean-term-chip {
+    background-color: #e8f4fd;
+    color: #2980b9;
+    border: 1px solid #bdc3c7;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 8px;
+}
+
 .item-actions {
     display: flex;
     gap: 5px;
@@ -1233,6 +1262,75 @@ button:hover {
 .training-item p {
     color: #666;
     line-height: 1.5;
+}
+
+/* Boolean Search Modal Styles */
+.boolean-terms-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.boolean-terms-container h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.boolean-terms-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 20px;
+}
+
+.boolean-term-chip {
+    display: inline-flex;
+    align-items: center;
+    background-color: #3498db;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    gap: 6px;
+}
+
+.boolean-term-chip .remove-term {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.boolean-term-chip .remove-term:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.add-boolean-search-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 15px;
+    transition: background-color 0.2s;
+}
+
+.add-boolean-search-btn:hover {
+    background-color: #229954;
 }
 
 /* Responsive Design */

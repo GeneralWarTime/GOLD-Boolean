@@ -213,9 +213,11 @@ function renderTitlesSubcategory(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
-
+            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('Titles', '${subcategory}')">
+                ➕ Add Boolean Search
+            </button>
             <div class="search-filter">
-                <input type="text" id="titleSearch" placeholder="Search titles..." onkeyup="filterTitles('${subcategory}')">
+                <input type="text" id="titleSearch" placeholder="Search titles or boolean terms..." onkeyup="filterTitles('${subcategory}')">
             </div>
             <div class="items-list" id="titlesList">
                 ${renderTitlesList(titles, subcategory)}
@@ -264,20 +266,27 @@ function renderTechnologyFrameworkActionSelection(contentElement, subcategory) {
 }
 
 function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategory) {
+    console.log('Rendering Domain subcategory items:', subcategory, subSubcategory);
+    console.log('Current categoryData:', categoryData);
+    
     // Initialize the data structure if it doesn't exist
     if (!categoryData['Domain'][subcategory]) {
         categoryData['Domain'][subcategory] = {};
     }
     if (!categoryData['Domain'][subcategory][subSubcategory]) {
-        categoryData['Domain'][subcategory][subSubcategory] = [];
+        categoryData['Domain'][subcategory][subSubcategory] = {};
     }
     
-    const items = categoryData['Domain'][subcategory][subSubcategory] || [];
+    const items = categoryData['Domain'][subcategory][subSubcategory] || {};
+    console.log('Items for this subcategory:', items);
     
     contentElement.innerHTML = `
         <div class="category-management">
+            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('${subcategory}', '${subSubcategory}')">
+                ➕ Add Boolean Search
+            </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search items..." onkeyup="filterDomainItems('${subcategory}', '${subSubcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterDomainItems('${subcategory}', '${subSubcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderDomainItemsList(items, subcategory, subSubcategory)}
@@ -288,18 +297,29 @@ function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategor
 
 function renderDomainItemsList(items, subcategory, subSubcategory) {
     if (Object.keys(items).length === 0) {
-        return '<p style="color: #7f8c8d; font-style: italic;">No items added yet.</p>';
+        return '<p style="color: #7f8c8d; font-style: italic;">No boolean searches added yet.</p>';
     }
     
-    return Object.keys(items).map((title, index) => `
-        <div class="item-row">
-            <span class="item-text">${title}</span>
-            <div class="item-actions">
-                <button class="edit-btn" onclick="editDomainTitle('${subcategory}', '${subSubcategory}', '${title}')">Edit</button>
-                <button class="delete-btn" onclick="deleteDomainTitle('${subcategory}', '${subSubcategory}', '${title}')">Delete</button>
+    return Object.keys(items).map((title, index) => {
+        const booleanTerms = items[title] || [];
+        const termsDisplay = booleanTerms.length > 0 
+            ? booleanTerms.map(term => `<span class="boolean-term-chip">"${term}"</span>`).join(' ')
+            : '<span style="color: #7f8c8d; font-style: italic;">No terms</span>';
+        
+        return `
+            <div class="item-row">
+                <div class="item-content">
+                    <div class="item-title">${title}</div>
+                    <div class="item-terms">${termsDisplay}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="boolean-options-btn" onclick="openDomainDetailsModal('${subcategory}', '${subSubcategory}', '${title}')">Boolean Options</button>
+                    <button class="edit-btn" onclick="editDomainTitle('${subcategory}', '${subSubcategory}', '${title}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteDomainTitle('${subcategory}', '${subSubcategory}', '${title}')">Delete</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function addDomainItem(subcategory, subSubcategory) {
@@ -345,9 +365,16 @@ function filterDomainItems(subcategory, subSubcategory) {
     const searchTerm = document.getElementById('itemSearch').value.toLowerCase();
     const items = categoryData['Domain'][subcategory][subSubcategory] || {};
     
-    const filteredItems = Object.keys(items).filter(title => 
-        title.toLowerCase().includes(searchTerm)
-    );
+    const filteredItems = Object.keys(items).filter(title => {
+        // Search in title
+        if (title.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+        
+        // Search in boolean terms
+        const booleanTerms = items[title] || [];
+        return booleanTerms.some(term => term.toLowerCase().includes(searchTerm));
+    });
     
     const filteredItemsObj = {};
     filteredItems.forEach(title => {
@@ -384,7 +411,7 @@ function openDomainDetailsModal(subcategory, subSubcategory, titleName) {
     const existingOptions = document.getElementById('existingBooleanOptions');
     existingOptions.innerHTML = booleanOptions.map(option => `
         <div class="boolean-option-item">
-            <span>${option}</span>
+            <span>"${option}"</span>
             <button class="delete-btn" onclick="removeBooleanOptionFromDomain('${subcategory}', '${subSubcategory}', '${titleName}', '${option}')">Delete</button>
         </div>
     `).join('');
@@ -396,6 +423,19 @@ function openDomainDetailsModal(subcategory, subSubcategory, titleName) {
     const titleElement = document.getElementById('selectedTitleName');
     titleElement.onclick = function() {
         makeDomainTitleEditable(this);
+    };
+    
+    // Add event listener for adding new boolean options
+    const newOptionInput = document.getElementById('newBooleanOption');
+    newOptionInput.onkeypress = function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const newOption = this.value.trim();
+            if (newOption) {
+                addBooleanOptionToDomain(subcategory, subSubcategory, titleName, newOption);
+                this.value = '';
+            }
+        }
     };
 }
 
@@ -415,6 +455,189 @@ function deleteDomainTitle(subcategory, subSubcategory, titleName) {
         delete categoryData['Domain'][subcategory][subSubcategory][titleName];
         saveData();
         renderCategoryView();
+    }
+}
+
+// Boolean Search Modal Functions
+let currentBooleanTerms = [];
+let currentModalCategory = null;
+let currentModalSubcategory = null;
+let currentModalSubSubcategory = null;
+
+function openAddBooleanSearchModal(category, subcategory, subSubcategory = null) {
+    currentModalCategory = category;
+    currentModalSubcategory = subcategory;
+    currentModalSubSubcategory = subSubcategory;
+    currentBooleanTerms = [];
+    
+    document.getElementById('addBooleanSearchModal').style.display = 'block';
+    document.getElementById('booleanSearchTitle').value = '';
+    document.getElementById('booleanSearchInput').value = '';
+    document.getElementById('booleanTermsList').innerHTML = '';
+}
+
+function closeAddBooleanSearchModal() {
+    document.getElementById('addBooleanSearchModal').style.display = 'none';
+    currentBooleanTerms = [];
+    currentModalCategory = null;
+    currentModalSubcategory = null;
+    currentModalSubSubcategory = null;
+}
+
+function handleBooleanSearchInputKeypress(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const input = document.getElementById('booleanSearchInput');
+        const term = input.value.trim();
+        
+        if (term) {
+            addBooleanTerm(term);
+            input.value = '';
+        }
+    }
+}
+
+function addBooleanTerm(term) {
+    if (term && !currentBooleanTerms.includes(term)) {
+        currentBooleanTerms.push(term);
+        renderBooleanTermsList();
+    }
+}
+
+function removeBooleanTerm(term) {
+    currentBooleanTerms = currentBooleanTerms.filter(t => t !== term);
+    renderBooleanTermsList();
+}
+
+function renderBooleanTermsList() {
+    const container = document.getElementById('booleanTermsList');
+    container.innerHTML = currentBooleanTerms.map(term => `
+        <div class="boolean-term-chip">
+            "${term}"
+            <button class="remove-term" onclick="removeBooleanTerm('${term}')">&times;</button>
+        </div>
+    `).join('');
+}
+
+function saveBooleanSearch() {
+    const title = document.getElementById('booleanSearchTitle').value.trim();
+    
+    if (!title) {
+        alert('Please enter a title for the boolean search.');
+        return;
+    }
+    
+    if (currentBooleanTerms.length === 0) {
+        alert('Please add at least one boolean search term.');
+        return;
+    }
+    
+    // Initialize the data structure based on category
+    if (currentModalCategory === 'Domain') {
+        if (!categoryData['Domain'][currentModalSubcategory]) {
+            categoryData['Domain'][currentModalSubcategory] = {};
+        }
+        if (!categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory]) {
+            categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory] = {};
+        }
+        categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][title] = currentBooleanTerms;
+    } else if (currentModalCategory === 'Titles') {
+        if (!categoryData['Titles'][currentModalSubcategory]) {
+            categoryData['Titles'][currentModalSubcategory] = {};
+        }
+        categoryData['Titles'][currentModalSubcategory][title] = currentBooleanTerms;
+    } else if (currentModalCategory === 'Industry') {
+        if (!categoryData['Industry'][currentModalSubcategory]) {
+            categoryData['Industry'][currentModalSubcategory] = {};
+        }
+        categoryData['Industry'][currentModalSubcategory][title] = currentBooleanTerms;
+    } else if (currentModalCategory === 'Context') {
+        if (!categoryData['Context'][currentModalSubcategory]) {
+            categoryData['Context'][currentModalSubcategory] = {};
+        }
+        categoryData['Context'][currentModalSubcategory][title] = currentBooleanTerms;
+    } else if (currentModalCategory === 'Certifications & Clearances') {
+        if (!categoryData['Certifications & Clearances'][currentModalSubcategory]) {
+            categoryData['Certifications & Clearances'][currentModalSubcategory] = {};
+        }
+        categoryData['Certifications & Clearances'][currentModalSubcategory][title] = currentBooleanTerms;
+    }
+    
+    saveData();
+    closeAddBooleanSearchModal();
+    renderCategoryView();
+}
+
+function removeBooleanOptionFromDomain(subcategory, subSubcategory, titleName, option) {
+    if (confirm('Are you sure you want to delete this boolean option?')) {
+        const booleanOptions = categoryData['Domain'][subcategory][subSubcategory][titleName] || [];
+        const updatedOptions = booleanOptions.filter(opt => opt !== option);
+        categoryData['Domain'][subcategory][subSubcategory][titleName] = updatedOptions;
+        saveData();
+        openDomainDetailsModal(subcategory, subSubcategory, titleName);
+    }
+}
+
+function addBooleanOptionToDomain(subcategory, subSubcategory, titleName, newOption) {
+    if (!categoryData['Domain'][subcategory][subSubcategory][titleName]) {
+        categoryData['Domain'][subcategory][subSubcategory][titleName] = [];
+    }
+    
+    // Check if option already exists
+    const existingOptions = categoryData['Domain'][subcategory][subSubcategory][titleName];
+    if (!existingOptions.includes(newOption)) {
+        existingOptions.push(newOption);
+        saveData();
+        openDomainDetailsModal(subcategory, subSubcategory, titleName);
+    } else {
+        alert('This boolean option already exists.');
+    }
+}
+
+function makeDomainTitleEditable(titleElement) {
+    const currentTitle = titleElement.textContent;
+    const originalTitle = titleElement.getAttribute('data-original-title');
+    const subcategory = titleElement.getAttribute('data-subcategory');
+    const subSubcategory = titleElement.getAttribute('data-sub-subcategory');
+    
+    titleElement.classList.add('editing');
+    titleElement.innerHTML = `<input type="text" value="${currentTitle}" onblur="saveDomainTitleEdit(this, '${subcategory}', '${subSubcategory}', '${originalTitle}')" onkeypress="handleDomainTitleEditKeypress(event, this, '${subcategory}', '${subSubcategory}', '${originalTitle}')">`;
+    
+    const input = titleElement.querySelector('input');
+    input.focus();
+    input.select();
+}
+
+function saveDomainTitleEdit(inputElement, subcategory, subSubcategory, originalTitle) {
+    const newTitle = inputElement.value.trim();
+    const titleElement = inputElement.parentElement;
+    
+    if (newTitle && newTitle !== originalTitle) {
+        // Update the title in the data structure
+        const booleanOptions = categoryData['Domain'][subcategory][subSubcategory][originalTitle];
+        delete categoryData['Domain'][subcategory][subSubcategory][originalTitle];
+        categoryData['Domain'][subcategory][subSubcategory][newTitle] = booleanOptions;
+        
+        // Update the display
+        titleElement.textContent = newTitle;
+        titleElement.setAttribute('data-original-title', newTitle);
+        
+        saveData();
+    } else {
+        // Revert to original title
+        titleElement.textContent = originalTitle;
+    }
+    
+    titleElement.classList.remove('editing');
+}
+
+function handleDomainTitleEditKeypress(event, inputElement, subcategory, subSubcategory, originalTitle) {
+    if (event.key === 'Enter') {
+        inputElement.blur();
+    } else if (event.key === 'Escape') {
+        const titleElement = inputElement.parentElement;
+        titleElement.textContent = originalTitle;
+        titleElement.classList.remove('editing');
     }
 }
 
@@ -447,8 +670,11 @@ function renderIndustrySubcategoryItems(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
+            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('Industry', '${subcategory}')">
+                ➕ Add Boolean Search
+            </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterIndustryItems('${subcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterIndustryItems('${subcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderIndustryItemsList(items, subcategory)}
@@ -462,16 +688,26 @@ function renderIndustryItemsList(items, subcategory) {
         return '<p style="color: #7f8c8d; font-style: italic;">No boolean searches added yet.</p>';
     }
     
-    return Object.keys(items).map((title, index) => `
-        <div class="item-row">
-            <span class="item-text">${title}</span>
-            <div class="item-actions">
-                <button class="boolean-options-btn" onclick="openIndustryDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
-                <button class="edit-btn" onclick="editIndustryTitle('${subcategory}', '${title}')">Edit</button>
-                <button class="delete-btn" onclick="deleteIndustryTitle('${subcategory}', '${title}')">Delete</button>
+    return Object.keys(items).map((title, index) => {
+        const booleanTerms = items[title] || [];
+        const termsDisplay = booleanTerms.length > 0 
+            ? booleanTerms.map(term => `<span class="boolean-term-chip">"${term}"</span>`).join(' ')
+            : '<span style="color: #7f8c8d; font-style: italic;">No terms</span>';
+        
+        return `
+            <div class="item-row">
+                <div class="item-content">
+                    <div class="item-title">${title}</div>
+                    <div class="item-terms">${termsDisplay}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="boolean-options-btn" onclick="openIndustryDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
+                    <button class="edit-btn" onclick="editIndustryTitle('${subcategory}', '${title}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteIndustryTitle('${subcategory}', '${title}')">Delete</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function addIndustryItem(subcategory) {
@@ -513,9 +749,16 @@ function filterIndustryItems(subcategory) {
     const searchTerm = document.getElementById('itemSearch').value.toLowerCase();
     const items = categoryData['Industry'][subcategory] || {};
     
-    const filteredItems = Object.keys(items).filter(title => 
-        title.toLowerCase().includes(searchTerm)
-    );
+    const filteredItems = Object.keys(items).filter(title => {
+        // Search in title
+        if (title.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+        
+        // Search in boolean terms
+        const booleanTerms = items[title] || [];
+        return booleanTerms.some(term => term.toLowerCase().includes(searchTerm));
+    });
     
     const filteredItemsObj = {};
     filteredItems.forEach(title => {
@@ -549,8 +792,11 @@ function renderContextSubcategoryItems(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
+            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('Context', '${subcategory}')">
+                ➕ Add Boolean Search
+            </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterContextItems('${subcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterContextItems('${subcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderContextItemsList(items, subcategory)}
@@ -564,25 +810,42 @@ function renderContextItemsList(items, subcategory) {
         return '<p style="color: #7f8c8d; font-style: italic;">No boolean searches added yet.</p>';
     }
     
-    return Object.keys(items).map((title, index) => `
-        <div class="item-row">
-            <span class="item-text">${title}</span>
-            <div class="item-actions">
-                <button class="boolean-options-btn" onclick="openContextDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
-                <button class="edit-btn" onclick="editContextTitle('${subcategory}', '${title}')">Edit</button>
-                <button class="delete-btn" onclick="deleteContextTitle('${subcategory}', '${title}')">Delete</button>
+    return Object.keys(items).map((title, index) => {
+        const booleanTerms = items[title] || [];
+        const termsDisplay = booleanTerms.length > 0 
+            ? booleanTerms.map(term => `<span class="boolean-term-chip">"${term}"</span>`).join(' ')
+            : '<span style="color: #7f8c8d; font-style: italic;">No terms</span>';
+        
+        return `
+            <div class="item-row">
+                <div class="item-content">
+                    <div class="item-title">${title}</div>
+                    <div class="item-terms">${termsDisplay}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="boolean-options-btn" onclick="openContextDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
+                    <button class="edit-btn" onclick="editContextTitle('${subcategory}', '${title}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteContextTitle('${subcategory}', '${title}')">Delete</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function filterContextItems(subcategory) {
     const searchTerm = document.getElementById('itemSearch').value.toLowerCase();
     const items = categoryData['Context'][subcategory] || {};
     
-    const filteredItems = Object.keys(items).filter(title => 
-        title.toLowerCase().includes(searchTerm)
-    );
+    const filteredItems = Object.keys(items).filter(title => {
+        // Search in title
+        if (title.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+        
+        // Search in boolean terms
+        const booleanTerms = items[title] || [];
+        return booleanTerms.some(term => term.toLowerCase().includes(searchTerm));
+    });
     
     const filteredItemsObj = {};
     filteredItems.forEach(title => {
@@ -619,8 +882,11 @@ function renderCertificationsSubcategoryItems(contentElement, subcategory) {
     
     contentElement.innerHTML = `
         <div class="category-management">
+            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('Certifications & Clearances', '${subcategory}')">
+                ➕ Add Boolean Search
+            </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search boolean searches..." onkeyup="filterCertificationsItems('${subcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterCertificationsItems('${subcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderCertificationsItemsList(items, subcategory)}
@@ -634,25 +900,42 @@ function renderCertificationsItemsList(items, subcategory) {
         return '<p style="color: #7f8c8d; font-style: italic;">No boolean searches added yet.</p>';
     }
     
-    return Object.keys(items).map((title, index) => `
-        <div class="item-row">
-            <span class="item-text">${title}</span>
-            <div class="item-actions">
-                <button class="boolean-options-btn" onclick="openCertificationsDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
-                <button class="edit-btn" onclick="editCertificationsTitle('${subcategory}', '${title}')">Edit</button>
-                <button class="delete-btn" onclick="deleteCertificationsTitle('${subcategory}', '${title}')">Delete</button>
+    return Object.keys(items).map((title, index) => {
+        const booleanTerms = items[title] || [];
+        const termsDisplay = booleanTerms.length > 0 
+            ? booleanTerms.map(term => `<span class="boolean-term-chip">"${term}"</span>`).join(' ')
+            : '<span style="color: #7f8c8d; font-style: italic;">No terms</span>';
+        
+        return `
+            <div class="item-row">
+                <div class="item-content">
+                    <div class="item-title">${title}</div>
+                    <div class="item-terms">${termsDisplay}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="boolean-options-btn" onclick="openCertificationsDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
+                    <button class="edit-btn" onclick="editCertificationsTitle('${subcategory}', '${title}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteCertificationsTitle('${subcategory}', '${title}')">Delete</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function filterCertificationsItems(subcategory) {
     const searchTerm = document.getElementById('itemSearch').value.toLowerCase();
     const items = categoryData['Certifications & Clearances'][subcategory] || {};
     
-    const filteredItems = Object.keys(items).filter(title => 
-        title.toLowerCase().includes(searchTerm)
-    );
+    const filteredItems = Object.keys(items).filter(title => {
+        // Search in title
+        if (title.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+        
+        // Search in boolean terms
+        const booleanTerms = items[title] || [];
+        return booleanTerms.some(term => term.toLowerCase().includes(searchTerm));
+    });
     
     const filteredItemsObj = {};
     filteredItems.forEach(title => {
@@ -684,19 +967,29 @@ function renderRegularCategory(contentElement, category) {
 
 function renderTitlesList(titles, subcategory) {
     if (titles.length === 0) {
-        return '<p style="color: #7f8c8d; font-style: italic;">No titles added yet.</p>';
+        return '<p style="color: #7f8c8d; font-style: italic;">No boolean searches added yet.</p>';
     }
     
-    return titles.map((title, index) => `
-        <div class="item-row">
-            <span class="item-text">${title}</span>
-            <div class="item-actions">
-                <button class="boolean-options-btn" onclick="openTitleDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
-                <button class="edit-btn" onclick="editTitle('${subcategory}', '${title}')">Edit</button>
-                <button class="delete-btn" onclick="deleteTitle('${subcategory}', '${title}')">Delete</button>
+    return titles.map((title, index) => {
+        const booleanTerms = categoryData['Titles'][subcategory][title] || [];
+        const termsDisplay = booleanTerms.length > 0 
+            ? booleanTerms.map(term => `<span class="boolean-term-chip">"${term}"</span>`).join(' ')
+            : '<span style="color: #7f8c8d; font-style: italic;">No terms</span>';
+        
+        return `
+            <div class="item-row">
+                <div class="item-content">
+                    <div class="item-title">${title}</div>
+                    <div class="item-terms">${termsDisplay}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="boolean-options-btn" onclick="openTitleDetailsModal('${subcategory}', '${title}')">Boolean Options</button>
+                    <button class="edit-btn" onclick="editTitle('${subcategory}', '${title}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteTitle('${subcategory}', '${title}')">Delete</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function renderItemsList(items) {
@@ -1119,13 +1412,26 @@ function deleteItem(category, index) {
 // Filter functions
 function filterTitles(subcategory) {
     const searchTerm = document.getElementById('titleSearch').value.toLowerCase();
-    const titles = Object.keys(categoryData['Titles'][subcategory] || {});
-    const filteredTitles = titles.filter(title => 
-        title.toLowerCase().includes(searchTerm)
-    );
+    const items = categoryData['Titles'][subcategory] || {};
+    
+    const filteredItems = Object.keys(items).filter(title => {
+        // Search in title
+        if (title.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+        
+        // Search in boolean terms
+        const booleanTerms = items[title] || [];
+        return booleanTerms.some(term => term.toLowerCase().includes(searchTerm));
+    });
+    
+    const filteredItemsObj = {};
+    filteredItems.forEach(title => {
+        filteredItemsObj[title] = items[title];
+    });
     
     const listElement = document.getElementById('titlesList');
-    listElement.innerHTML = renderTitlesList(filteredTitles, subcategory);
+    listElement.innerHTML = renderTitlesList(Object.keys(filteredItemsObj), subcategory);
 }
 
 function filterItems(category) {
@@ -2277,12 +2583,19 @@ function importData() {
 function clearAllData() {
     if (confirm('Are you sure you want to clear ALL data? This action cannot be undone.')) {
         if (confirm('This will delete all your boolean searches, training content, and settings. Are you absolutely sure?')) {
-    localStorage.removeItem('pluginData');
+            localStorage.removeItem('pluginData');
             initializeDefaultData();
             renderAll();
             alert('All data has been cleared.');
         }
     }
+}
+
+function forceReload() {
+    console.log('Force reloading data...');
+    loadData();
+    renderAll();
+    console.log('Reload complete. Current categoryData:', categoryData);
 }
 
 function loadData() {
@@ -2308,7 +2621,7 @@ function loadData() {
             if (!categoryData['Context']) categoryData['Context'] = {};
             if (!categoryData['Certifications & Clearances']) categoryData['Certifications & Clearances'] = {};
             
-            // Ensure all Domain subcategories exist
+            // Ensure all Domain subcategories exist and migrate old data structure
             const domainSubcategories = [
                 'Agile & Scrum', 'AI & Machine Learning', 'Architecture', 'Change & Transformation',
                 'Cyber Security', 'Data & Analytics', 'DevOps & Platform Engineering', 'Digital',
@@ -2317,6 +2630,48 @@ function loadData() {
             ];
             domainSubcategories.forEach(sub => {
                 if (!categoryData['Domain'][sub]) categoryData['Domain'][sub] = {};
+                
+                // Migrate old array structure to object structure
+                if (Array.isArray(categoryData['Domain'][sub])) {
+                    console.log('Migrating old array structure for Domain subcategory:', sub);
+                    const oldArray = categoryData['Domain'][sub];
+                    categoryData['Domain'][sub] = {};
+                    
+                    // Convert array items to object structure
+                    oldArray.forEach((item, index) => {
+                        if (typeof item === 'string') {
+                            categoryData['Domain'][sub][`Item ${index + 1}`] = [item];
+                        } else if (typeof item === 'object' && item !== null) {
+                            // If it's already an object, keep it
+                            Object.keys(item).forEach(key => {
+                                categoryData['Domain'][sub][key] = item[key];
+                            });
+                        }
+                    });
+                }
+                
+                // Ensure sub-subcategories exist as objects
+                const subSubcategories = ['Technology', 'Framework', 'Action'];
+                subSubcategories.forEach(subSub => {
+                    if (!categoryData['Domain'][sub][subSub]) {
+                        categoryData['Domain'][sub][subSub] = {};
+                    } else if (Array.isArray(categoryData['Domain'][sub][subSub])) {
+                        // Migrate sub-subcategory from array to object
+                        console.log('Migrating sub-subcategory array to object:', sub, subSub);
+                        const oldArray = categoryData['Domain'][sub][subSub];
+                        categoryData['Domain'][sub][subSub] = {};
+                        
+                        oldArray.forEach((item, index) => {
+                            if (typeof item === 'string') {
+                                categoryData['Domain'][sub][subSub][`Item ${index + 1}`] = [item];
+                            } else if (typeof item === 'object' && item !== null) {
+                                Object.keys(item).forEach(key => {
+                                    categoryData['Domain'][sub][subSub][key] = item[key];
+                                });
+                            }
+                        });
+                    }
+                });
             });
             
             // Ensure all Industry subcategories exist
