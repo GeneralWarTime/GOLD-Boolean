@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PLUG IN OR PLUG OUT</title>
-    <link rel="stylesheet" href="styles.css?v=6">
+    <link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
     <div class="container">
@@ -90,7 +90,17 @@
 
                             <!-- Boolean Operators -->
                             <div class="boolean-operators-section">
-                                <h3>Boolean Operators</h3>
+                                <div class="operators-header">
+                                    <h3>Boolean Operators</h3>
+                                    <div class="interaction-mode-toggle">
+                                        <button id="clickModeBtn" class="mode-btn active" data-mode="click">
+                                            <span class="mode-icon">👆</span> Click Mode
+                                        </button>
+                                        <button id="dragModeBtn" class="mode-btn" data-mode="drag">
+                                            <span class="mode-icon">🖱️</span> Drag Mode
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="boolean-operators-grid">
                                     <button class="boolean-operator-btn" data-value="(">(</button>
                                     <button class="boolean-operator-btn" data-value=")">)</button>
@@ -99,6 +109,16 @@
                                     <button class="boolean-operator-btn" data-value=" OR ">OR</button>
                                     <button class="boolean-operator-btn" data-value=" NOT ">NOT</button>
                                     <button class="boolean-operator-btn" data-value=" ">SPACE</button>
+                                </div>
+                                <div class="auto-toggle-section">
+                                    <button id="autoAndBtn" class="auto-toggle-btn" data-operator="AND">
+                                        <span class="toggle-icon">⚡</span>
+                                        <span class="toggle-text">Auto AND</span>
+                                    </button>
+                                    <button id="autoOrBtn" class="auto-toggle-btn" data-operator="OR">
+                                        <span class="toggle-icon">⚡</span>
+                                        <span class="toggle-text">Auto OR</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -280,6 +300,39 @@
         </div>
     </div>
 
-    <script src="script.js?v=19"></script>
+    <!-- Custom Confirmation Modal -->
+    <div id="customConfirmModal" class="modal">
+        <div class="modal-content confirm-modal">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm Action</h3>
+                <span class="close" onclick="closeCustomConfirmModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmYes" class="confirm-btn confirm-yes">Yes</button>
+                <button id="confirmNo" class="confirm-btn confirm-no">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal" class="modal">
+        <div class="modal-content alert-modal">
+            <div class="modal-header">
+                <h3 id="alertTitle">Notice</h3>
+                <span class="close" onclick="closeCustomAlertModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="alertMessage">This is an alert message.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="alertOk" class="alert-btn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=37"></script>
 </body>
 </html> 

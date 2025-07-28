@@ -138,11 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupTrainerSection();
     renderAll();
     updateDataStatus();
-    
-
-    
-
-
+    loadInteractionMode();
     
     // Update data status every minute
     setInterval(updateDataStatus, 60000);
@@ -408,11 +404,13 @@ function editDomainItem(subcategory, subSubcategory, index) {
 }
 
 function deleteDomainItem(subcategory, subSubcategory, index) {
-    if (confirm('Are you sure you want to delete this item?')) {
-        categoryData['Domain'][subcategory][subSubcategory].splice(index, 1);
-        saveData();
-        renderCategoryView();
-    }
+    showCustomConfirm('Delete Item', 'Are you sure you want to delete this item?', (confirmed) => {
+        if (confirmed) {
+            categoryData['Domain'][subcategory][subSubcategory].splice(index, 1);
+            saveData();
+            renderCategoryView();
+        }
+    });
 }
 
 function filterDomainItems(subcategory, subSubcategory) {
@@ -504,8 +502,9 @@ function editDomainTitle(subcategory, subSubcategory, titleName) {
     }
 }
 
-function deleteDomainTitle(subcategory, subSubcategory, titleName) {
-    if (confirm('Are you sure you want to delete this boolean search?')) {
+async function deleteDomainTitle(subcategory, subSubcategory, titleName) {
+    const confirmed = await customConfirm('Delete Boolean Search', 'Are you sure you want to delete this boolean search?');
+    if (confirmed) {
         delete categoryData['Domain'][subcategory][subSubcategory][titleName];
         saveData();
         renderCategoryView();
@@ -580,16 +579,16 @@ function renderBooleanTermsList() {
     `).join('');
 }
 
-function saveBooleanSearch() {
+async function saveBooleanSearch() {
     const title = document.getElementById('booleanSearchTitle').value.trim();
     
     if (!title) {
-        alert('Please enter a title for the boolean search.');
+        await customAlert('Missing Title', 'Please enter a title for the boolean search.');
         return;
     }
     
     if (currentBooleanTerms.length === 0) {
-        alert('Please add at least one boolean search term.');
+        await customAlert('Missing Terms', 'Please add at least one boolean search term.');
         return;
     }
     
@@ -629,8 +628,9 @@ function saveBooleanSearch() {
     renderCategoryView();
 }
 
-function removeBooleanOptionFromDomain(subcategory, subSubcategory, titleName, option) {
-    if (confirm('Are you sure you want to delete this boolean option?')) {
+async function removeBooleanOptionFromDomain(subcategory, subSubcategory, titleName, option) {
+    const confirmed = await customConfirm('Delete Boolean Option', 'Are you sure you want to delete this boolean option?');
+    if (confirmed) {
         const booleanOptions = categoryData['Domain'][subcategory][subSubcategory][titleName] || [];
         const updatedOptions = booleanOptions.filter(opt => opt !== option);
         categoryData['Domain'][subcategory][subSubcategory][titleName] = updatedOptions;
@@ -639,7 +639,7 @@ function removeBooleanOptionFromDomain(subcategory, subSubcategory, titleName, o
     }
 }
 
-function addBooleanOptionToDomain(subcategory, subSubcategory, titleName, newOption) {
+async function addBooleanOptionToDomain(subcategory, subSubcategory, titleName, newOption) {
     if (!categoryData['Domain'][subcategory][subSubcategory][titleName]) {
         categoryData['Domain'][subcategory][subSubcategory][titleName] = [];
     }
@@ -651,7 +651,7 @@ function addBooleanOptionToDomain(subcategory, subSubcategory, titleName, newOpt
         saveData();
         openDomainDetailsModal(subcategory, subSubcategory, titleName);
     } else {
-        alert('This boolean option already exists.');
+        await customAlert('Duplicate Option', 'This boolean option already exists.');
     }
 }
 
@@ -797,8 +797,9 @@ function editIndustryItem(subcategory, titleName) {
     }
 }
 
-function deleteIndustryItem(subcategory, titleName) {
-    if (confirm('Are you sure you want to delete this boolean search?')) {
+async function deleteIndustryItem(subcategory, titleName) {
+    const confirmed = await customConfirm('Delete Boolean Search', 'Are you sure you want to delete this boolean search?');
+    if (confirmed) {
         delete categoryData['Industry'][subcategory][titleName];
         saveData();
         renderCategoryView();
@@ -1097,7 +1098,7 @@ function closeModal() {
     document.getElementById('addTitleModal').style.display = 'none';
 }
 
-function saveTitle() {
+async function saveTitle() {
     const titleName = document.getElementById('titleName').value.trim();
     
     if (titleName) {
@@ -1126,7 +1127,7 @@ function saveTitle() {
         renderAll();
         currentIndustrySubcategory = null; // Reset after save
     } else {
-        alert('Please enter a title name.');
+        await customAlert('Missing Title', 'Please enter a title name.');
     }
 }
 
@@ -1306,8 +1307,9 @@ function editContextTitle(subcategory, titleName) {
     }
 }
 
-function deleteContextTitle(subcategory, titleName) {
-    if (confirm('Are you sure you want to delete this context?')) {
+async function deleteContextTitle(subcategory, titleName) {
+    const confirmed = await customConfirm('Delete Context', 'Are you sure you want to delete this context?');
+    if (confirmed) {
         delete categoryData['Context'][subcategory][titleName];
         saveData();
         renderCategoryView();
@@ -1367,8 +1369,9 @@ function editCertificationsTitle(subcategory, titleName) {
     }
 }
 
-function deleteCertificationsTitle(subcategory, titleName) {
-    if (confirm('Are you sure you want to delete this certification?')) {
+async function deleteCertificationsTitle(subcategory, titleName) {
+    const confirmed = await customConfirm('Delete Certification', 'Are you sure you want to delete this certification?');
+    if (confirmed) {
         delete categoryData['Certifications & Clearances'][subcategory][titleName];
         saveData();
         renderCategoryView();
@@ -1449,16 +1452,18 @@ function editItem(category, index) {
 
 
 // Delete functions
-function deleteTitle(subcategory, titleName) {
-    if (confirm('Are you sure you want to delete this title?')) {
+async function deleteTitle(subcategory, titleName) {
+    const confirmed = await customConfirm('Delete Title', 'Are you sure you want to delete this title?');
+    if (confirmed) {
         delete categoryData['Titles'][subcategory][titleName];
         saveData();
         renderCategoryView();
     }
 }
 
-function deleteItem(category, index) {
-    if (confirm('Are you sure you want to delete this item?')) {
+async function deleteItem(category, index) {
+    const confirmed = await customConfirm('Delete Item', 'Are you sure you want to delete this item?');
+    if (confirmed) {
         categoryData[category].splice(index, 1);
         saveData();
         renderCategoryView();
@@ -1525,6 +1530,9 @@ function setupBuilderSection() {
         });
     });
     
+    // Setup auto operator button
+    setupAutoOperator();
+    
     // Setup copy and clear buttons
     const copyBtn = document.getElementById('copyBooleanString');
     const clearBtn = document.getElementById('clearBooleanString');
@@ -1532,8 +1540,242 @@ function setupBuilderSection() {
     copyBtn.addEventListener('click', copyBooleanString);
     clearBtn.addEventListener('click', clearBooleanString);
     
+    // Setup textarea validation
+    const textarea = document.getElementById('booleanString');
+    if (textarea) {
+        textarea.addEventListener('input', validateBooleanSyntax);
+        textarea.addEventListener('keyup', validateBooleanSyntax);
+    }
+    
+    // Setup interaction mode toggle
+    setupInteractionModeToggle();
+    
     // Render roles dashboard
     renderRolesDashboard();
+}
+
+// Auto Operator functionality
+function setupAutoOperator() {
+    const autoAndBtn = document.getElementById('autoAndBtn');
+    const autoOrBtn = document.getElementById('autoOrBtn');
+    
+    if (autoAndBtn && autoOrBtn) {
+        // Load saved state
+        const savedAutoOperator = localStorage.getItem('autoOperator') || 'AND';
+        const wasActive = localStorage.getItem('autoOperatorActive') === 'true';
+        
+        // Set up both buttons
+        setupAutoButton(autoAndBtn, 'AND', savedAutoOperator === 'AND' && wasActive);
+        setupAutoButton(autoOrBtn, 'OR', savedAutoOperator === 'OR' && wasActive);
+    }
+}
+
+function setupAutoButton(button, operator, isActive) {
+    button.setAttribute('data-operator', operator);
+    
+    if (isActive) {
+        button.classList.add('active');
+    }
+    
+    button.addEventListener('click', function() {
+        toggleAutoOperator(operator);
+    });
+    
+    button.title = `Click to toggle Auto ${operator} mode`;
+}
+
+function toggleAutoOperator(operator) {
+    const autoAndBtn = document.getElementById('autoAndBtn');
+    const autoOrBtn = document.getElementById('autoOrBtn');
+    
+    // Check if the clicked button is already active
+    const clickedButton = operator === 'AND' ? autoAndBtn : autoOrBtn;
+    const otherButton = operator === 'AND' ? autoOrBtn : autoAndBtn;
+    const isActive = clickedButton.classList.contains('active');
+    
+    if (isActive) {
+        // Turn off auto mode
+        clickedButton.classList.remove('active');
+        localStorage.setItem('autoOperatorActive', 'false');
+    } else {
+        // Turn on auto mode and turn off the other button
+        autoAndBtn.classList.remove('active');
+        autoOrBtn.classList.remove('active');
+        clickedButton.classList.add('active');
+        localStorage.setItem('autoOperatorActive', 'true');
+        localStorage.setItem('autoOperator', operator);
+    }
+}
+
+function insertAtCursor(text) {
+    const textarea = document.getElementById('booleanString');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    
+    // Check if auto operator should be inserted
+    const autoAndBtn = document.getElementById('autoAndBtn');
+    const autoOrBtn = document.getElementById('autoOrBtn');
+    const activeButton = autoAndBtn.classList.contains('active') ? autoAndBtn : 
+                        autoOrBtn.classList.contains('active') ? autoOrBtn : null;
+    const shouldAutoInsert = activeButton && activeButton.classList.contains('active');
+    
+    let textToInsert = text;
+    const operators = ['(', ')', '"', ' AND ', ' OR ', ' NOT ', ' '];
+    if (!operators.includes(text) && !text.startsWith('"') && !text.endsWith('"')) {
+        textToInsert = `"${text}"`;
+    }
+    
+    // Auto-insert operator if enabled and there's existing content
+    if (shouldAutoInsert && value.trim() !== '' && !operators.includes(text)) {
+        const currentOperator = activeButton.getAttribute('data-operator');
+        const operatorToInsert = ` ${currentOperator} `;
+        
+        // Check if the cursor is at the end or if we need to add operator
+        const cursorAtEnd = start === value.length;
+        const lastChar = value.charAt(start - 1);
+        const needsOperator = lastChar !== ' ' && lastChar !== '(' && lastChar !== '"';
+        
+        if (cursorAtEnd && needsOperator) {
+            textToInsert = operatorToInsert + textToInsert;
+        } else if (!cursorAtEnd && needsOperator) {
+            textToInsert = operatorToInsert + textToInsert;
+        }
+    }
+    
+    textarea.value = value.substring(0, start) + textToInsert + value.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + textToInsert.length;
+    textarea.focus();
+    
+    // Validate syntax after insertion
+    validateBooleanSyntax();
+}
+
+// Interaction Mode Management
+function setupInteractionModeToggle() {
+    const clickModeBtn = document.getElementById('clickModeBtn');
+    const dragModeBtn = document.getElementById('dragModeBtn');
+    
+    if (clickModeBtn && dragModeBtn) {
+        clickModeBtn.addEventListener('click', () => switchToMode('click'));
+        dragModeBtn.addEventListener('click', () => switchToMode('drag'));
+    }
+}
+
+function switchToMode(mode) {
+    const clickModeBtn = document.getElementById('clickModeBtn');
+    const dragModeBtn = document.getElementById('dragModeBtn');
+    const booleanBuilder = document.getElementById('booleanBuilder');
+    
+    // Update button states
+    clickModeBtn.classList.toggle('active', mode === 'click');
+    dragModeBtn.classList.toggle('active', mode === 'drag');
+    
+    // Update builder class
+    booleanBuilder.classList.toggle('drag-mode', mode === 'drag');
+    
+    // Setup drag & drop if needed
+    if (mode === 'drag') {
+        setupDragAndDrop();
+    } else {
+        removeDragAndDrop();
+    }
+    
+    // Save user preference
+    localStorage.setItem('interactionMode', mode);
+}
+
+function setupDragAndDrop() {
+    const draggableElements = document.querySelectorAll('.boolean-operator-btn, .keyword-btn, .recent-search-text');
+    const dropZone = document.getElementById('booleanString');
+    
+    // Create drag indicator
+    let dragIndicator = document.getElementById('dragIndicator');
+    if (!dragIndicator) {
+        dragIndicator = document.createElement('div');
+        dragIndicator.id = 'dragIndicator';
+        dragIndicator.className = 'drag-indicator';
+        document.body.appendChild(dragIndicator);
+    }
+    
+    draggableElements.forEach(element => {
+        element.setAttribute('draggable', 'true');
+        
+        element.addEventListener('dragstart', (e) => {
+            const text = element.getAttribute('data-value') || element.textContent.trim();
+            e.dataTransfer.setData('text/plain', text);
+            e.dataTransfer.effectAllowed = 'copy';
+            
+            // Show drag indicator
+            dragIndicator.textContent = `Dragging: ${text}`;
+            dragIndicator.classList.add('visible');
+        });
+        
+        element.addEventListener('dragend', () => {
+            dragIndicator.classList.remove('visible');
+        });
+    });
+    
+    // Setup drop zone
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            dropZone.classList.add('drag-over');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const text = e.dataTransfer.getData('text/plain');
+            if (text) {
+                insertAtCursor(text);
+            }
+        });
+    }
+    
+    // Update drag indicator position
+    document.addEventListener('dragover', (e) => {
+        if (dragIndicator.classList.contains('visible')) {
+            dragIndicator.style.left = (e.clientX + 10) + 'px';
+            dragIndicator.style.top = (e.clientY + 10) + 'px';
+        }
+    });
+}
+
+function removeDragAndDrop() {
+    const draggableElements = document.querySelectorAll('.boolean-operator-btn, .keyword-btn, .recent-search-text');
+    const dropZone = document.getElementById('booleanString');
+    
+    draggableElements.forEach(element => {
+        element.removeAttribute('draggable');
+        element.removeEventListener('dragstart', null);
+        element.removeEventListener('dragend', null);
+    });
+    
+    if (dropZone) {
+        dropZone.removeEventListener('dragover', null);
+        dropZone.removeEventListener('dragleave', null);
+        dropZone.removeEventListener('drop', null);
+        dropZone.classList.remove('drag-over');
+    }
+    
+    // Remove drag indicator
+    const dragIndicator = document.getElementById('dragIndicator');
+    if (dragIndicator) {
+        dragIndicator.remove();
+    }
+}
+
+// Load saved interaction mode on page load
+function loadInteractionMode() {
+    const savedMode = localStorage.getItem('interactionMode') || 'click';
+    switchToMode(savedMode);
 }
 
 // Role Management Functions
@@ -1551,13 +1793,13 @@ function closeNewRoleModal() {
     document.getElementById('newRoleModal').style.display = 'none';
 }
 
-function createNewRole() {
+async function createNewRole() {
     const title = document.getElementById('newRoleTitle').value.trim();
     const roleId = document.getElementById('newRoleId').value.trim();
     const client = document.getElementById('newRoleClient').value;
     
     if (!title) {
-        alert('Please enter a role title.');
+        await customAlert('Missing Role Title', 'Please enter a role title.');
         return;
     }
     
@@ -1585,13 +1827,13 @@ function createNewRole() {
     closeNewRoleModal();
 }
 
-function createNewRoleAndGoToBuilder() {
+async function createNewRoleAndGoToBuilder() {
     const title = document.getElementById('newRoleTitle').value.trim();
     const roleId = document.getElementById('newRoleId').value.trim();
     const client = document.getElementById('newRoleClient').value;
     
     if (!title) {
-        alert('Please enter a role title.');
+        await customAlert('Missing Role Title', 'Please enter a role title.');
         return;
     }
     
@@ -1796,6 +2038,17 @@ function renderCategoryBooleanSearches(container, categoryKey) {
                         checkbox.dataset.subSubcategory = subSubcategory;
                         checkbox.dataset.searchData = JSON.stringify(search);
                         
+                        // Check if this search is already selected
+                        if (currentRole && currentRole.selectedBooleanSearches) {
+                            const searchId = JSON.stringify(search);
+                            const isAlreadySelected = currentRole.selectedBooleanSearches.some(selectedSearch => 
+                                JSON.stringify(selectedSearch) === searchId
+                            );
+                            if (isAlreadySelected) {
+                                checkbox.checked = true;
+                            }
+                        }
+                        
                         const label = document.createElement('label');
                         label.htmlFor = `search-${categoryKey}-${subcategory}-${subSubcategory}-${search.title}`;
                         label.textContent = search.title;
@@ -1823,6 +2076,17 @@ function renderCategoryBooleanSearches(container, categoryKey) {
                     checkbox.dataset.category = categoryKey;
                     checkbox.dataset.subcategory = subcategory;
                     checkbox.dataset.searchData = JSON.stringify(search);
+                    
+                    // Check if this search is already selected
+                    if (currentRole && currentRole.selectedBooleanSearches) {
+                        const searchId = JSON.stringify(search);
+                        const isAlreadySelected = currentRole.selectedBooleanSearches.some(selectedSearch => 
+                            JSON.stringify(selectedSearch) === searchId
+                        );
+                        if (isAlreadySelected) {
+                            checkbox.checked = true;
+                        }
+                    }
                     
                     const label = document.createElement('label');
                     label.htmlFor = `search-${categoryKey}-${subcategory}-${search.title}`;
@@ -2019,16 +2283,29 @@ function selectAllCategorySearches(categoryKey) {
 }
 
 function saveSelectedKeywords() {
-    const selectedBooleanSearches = [];
+    // Start with existing selections
+    const existingSelections = currentRole ? (currentRole.selectedBooleanSearches || []) : [];
+    const existingSelectionIds = new Set(existingSelections.map(search => JSON.stringify(search)));
+    
+    // Get newly selected checkboxes
     const checkboxes = document.querySelectorAll('.keyword-checkbox-item input[type="checkbox"]:checked');
+    const newSelections = [];
     
     checkboxes.forEach(checkbox => {
         const searchData = JSON.parse(checkbox.dataset.searchData);
-        selectedBooleanSearches.push(searchData);
+        const searchId = JSON.stringify(searchData);
+        
+        // Only add if it's not already in existing selections
+        if (!existingSelectionIds.has(searchId)) {
+            newSelections.push(searchData);
+        }
     });
     
+    // Combine existing and new selections
+    const allSelections = [...existingSelections, ...newSelections];
+    
     if (currentRole) {
-        currentRole.selectedBooleanSearches = selectedBooleanSearches;
+        currentRole.selectedBooleanSearches = allSelections;
         saveData();
     }
     
@@ -2051,38 +2328,66 @@ function saveSelectedKeywords() {
 
 function renderSelectedBooleanSearches() {
     const container = document.getElementById('keywordsContainer');
-    if (!currentRole || !currentRole.selectedBooleanSearches || currentRole.selectedBooleanSearches.length === 0) {
-        return;
-    }
     
     // Add selected boolean searches section at the top
     const selectedSection = document.createElement('div');
     selectedSection.className = 'keyword-category';
-    selectedSection.innerHTML = `
-        <h4>Selected Boolean Searches</h4>
-        <div class="keyword-list">
-            ${currentRole.selectedBooleanSearches.map(search => `
-                <div class="boolean-search-group">
-                    <div class="search-title">${search.title}</div>
-                    <div class="search-options">
-                        ${search.booleanOptions.map(option => {
-                            // Remove quotes for display and get the raw term
-                            let displayOption = option;
-                            let rawTerm = option;
-                            
-                            // If the option has quotes, remove them for display and use raw term for insertion
-                            if (option.startsWith('"') && option.endsWith('"')) {
-                                displayOption = option.slice(1, -1);
-                                rawTerm = displayOption; // Use the unquoted version for insertion
-                            }
-                            
-                            return `<button class="keyword-btn" onclick="insertAtCursor('${rawTerm.replace(/'/g, "\\'")}')">${displayOption}</button>`;
-                        }).join('')}
-                    </div>
-                </div>
-            `).join('')}
+    
+    // Create header with title and add button
+    const headerHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0;">Selected Boolean Searches</h4>
+            <button class="add-more-searches-btn" onclick="openKeywordSelector()" style="
+                background: var(--primary);
+                color: white;
+                border: none;
+                border-radius: var(--radius-sm);
+                padding: 6px 12px;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.2s;
+            ">Add More Searches</button>
         </div>
     `;
+    
+    // Create content based on whether there are existing searches
+    let contentHtml = '';
+    if (!currentRole || !currentRole.selectedBooleanSearches || currentRole.selectedBooleanSearches.length === 0) {
+        contentHtml = `
+            <div style="text-align: center; color: #7f8c8d; font-style: italic; padding: 20px;">
+                <p>No selected searches yet.</p>
+                <p>Click "Add More Searches" to get started!</p>
+            </div>
+        `;
+    } else {
+        contentHtml = `
+            <div class="keyword-list">
+                ${currentRole.selectedBooleanSearches.map(search => `
+                    <div class="boolean-search-group">
+                        <div class="search-title">${search.title}</div>
+                        <div class="search-options">
+                            ${search.booleanOptions.map(option => {
+                                // Remove quotes for display and get the raw term
+                                let displayOption = option;
+                                let rawTerm = option;
+                                
+                                // If the option has quotes, remove them for display and use raw term for insertion
+                                if (option.startsWith('"') && option.endsWith('"')) {
+                                    displayOption = option.slice(1, -1);
+                                    rawTerm = displayOption; // Use the unquoted version for insertion
+                                }
+                                
+                                return `<button class="keyword-btn" onclick="insertAtCursor('${rawTerm.replace(/'/g, "\\'")}')">${displayOption}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    selectedSection.innerHTML = headerHtml + contentHtml;
     
     // Insert at the beginning of the container
     container.insertBefore(selectedSection, container.firstChild);
@@ -2213,10 +2518,11 @@ function renameRole(roleId) {
     }
 }
 
-function deleteRole(roleId) {
+async function deleteRole(roleId) {
     const role = roles.find(r => r.id === roleId);
     if (role) {
-        if (confirm(`Are you sure you want to delete the role "${role.name}"? This action cannot be undone.`)) {
+        const confirmed = await customConfirm('Delete Role', `Are you sure you want to delete the role "${role.name}"? This action cannot be undone.`);
+        if (confirmed) {
             roles = roles.filter(r => r.id !== roleId);
             saveData();
             renderRolesDashboard();
@@ -2231,20 +2537,321 @@ function insertAtCursor(text) {
     const end = textarea.selectionEnd;
     const value = textarea.value;
     
-    // Ensure the text has quotes around it if it's a keyword (not an operator)
+    // Check if auto operator should be inserted
+    const autoAndBtn = document.getElementById('autoAndBtn');
+    const autoOrBtn = document.getElementById('autoOrBtn');
+    
+    console.log('=== AUTO OPERATOR DEBUG ===');
+    console.log('Auto buttons found:', { autoAndBtn: !!autoAndBtn, autoOrBtn: !!autoOrBtn });
+    console.log('Auto AND active:', autoAndBtn?.classList.contains('active'));
+    console.log('Auto OR active:', autoOrBtn?.classList.contains('active'));
+    
+    const activeButton = autoAndBtn?.classList.contains('active') ? autoAndBtn : 
+                        autoOrBtn?.classList.contains('active') ? autoOrBtn : null;
+    const shouldAutoInsert = activeButton && activeButton.classList.contains('active');
+    
+    console.log('Active button:', activeButton);
+    console.log('Should auto insert:', shouldAutoInsert);
+    console.log('Current textarea value:', value);
+    console.log('Text to insert:', text);
+    
     let textToInsert = text;
     const operators = ['(', ')', '"', ' AND ', ' OR ', ' NOT ', ' '];
     if (!operators.includes(text) && !text.startsWith('"') && !text.endsWith('"')) {
         textToInsert = `"${text}"`;
     }
     
+    // Auto-insert operator if enabled and there's existing content
+    if (shouldAutoInsert && value.trim() !== '' && !operators.includes(text)) {
+        const currentOperator = activeButton.getAttribute('data-operator');
+        const operatorToInsert = ` ${currentOperator} `;
+        
+        console.log('Current operator:', currentOperator);
+        console.log('Operator to insert:', operatorToInsert);
+        
+        // Check if the cursor is at the end or if we need to add operator
+        const cursorAtEnd = start === value.length;
+        const lastChar = value.charAt(start - 1);
+        
+        // We need an operator if:
+        // 1. We're at the end of the textarea AND there's existing content
+        // 2. The last character is not a space, opening parenthesis, or opening quote
+        // 3. OR if we're inserting in the middle and need an operator
+        const needsOperator = (cursorAtEnd && value.trim() !== '') || 
+                             (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"');
+        
+        console.log('Cursor at end:', cursorAtEnd);
+        console.log('Last char:', lastChar);
+        console.log('Needs operator:', needsOperator);
+        
+        if (cursorAtEnd && needsOperator) {
+            textToInsert = operatorToInsert + textToInsert;
+            console.log('Adding operator at end');
+        } else if (!cursorAtEnd && needsOperator) {
+            textToInsert = operatorToInsert + textToInsert;
+            console.log('Adding operator in middle');
+        }
+    }
+    
+    console.log('Final text to insert:', textToInsert);
+    console.log('=== END DEBUG ===');
+    
     textarea.value = value.substring(0, start) + textToInsert + value.substring(end);
     textarea.selectionStart = textarea.selectionEnd = start + textToInsert.length;
     textarea.focus();
+    
+    // Validate syntax after insertion
+    validateBooleanSyntax();
+}
+
+// Remove duplicate insertAtCursor function - this is the duplicate
+// function insertAtCursor(text) {
+//     const textarea = document.getElementById('booleanString');
+//     const start = textarea.selectionStart;
+//     const end = textarea.selectionEnd;
+//     const value = textarea.value;
+//     
+//     // Check if auto operator should be inserted
+//     const autoAndBtn = document.getElementById('autoAndBtn');
+//     const autoOrBtn = document.getElementById('autoOrBtn');
+//     const activeButton = autoAndBtn.classList.contains('active') ? autoAndBtn : 
+//                         autoOrBtn.classList.contains('active') ? autoOrBtn : null;
+//     const shouldAutoInsert = activeButton && activeButton.classList.contains('active');
+//     
+//     let textToInsert = text;
+//     const operators = ['(', ')', '"', ' AND ', ' OR ', ' NOT ', ' '];
+//     if (!operators.includes(text) && !text.startsWith('"') && !text.endsWith('"')) {
+//         textToInsert = `"${text}"`;
+//     }
+//     
+//     // Auto-insert operator if enabled and there's existing content
+//     if (shouldAutoInsert && value.trim() !== '' && !operators.includes(text)) {
+//         const currentOperator = activeButton.getAttribute('data-operator');
+//         const operatorToInsert = ` ${currentOperator} `;
+//         
+//         // Check if the cursor is at the end or if we need to add operator
+//         const cursorAtEnd = start === value.length;
+//         const lastChar = value.charAt(start - 1);
+//         const needsOperator = lastChar !== ' ' && lastChar !== '(' && lastChar !== '"';
+//         
+//         if (cursorAtEnd && needsOperator) {
+//             textToInsert = operatorToInsert + textToInsert;
+//         } else if (!cursorAtEnd && needsOperator) {
+//             textToInsert = operatorToInsert + textToInsert;
+//         }
+//     }
+//     
+//     textarea.value = value.substring(0, start) + textToInsert + value.substring(end);
+//     textarea.selectionStart = textarea.selectionEnd = start + textToInsert.length;
+//     textarea.focus();
+//     
+//     // Validate syntax after insertion
+//     validateBooleanSyntax();
+// }
+
+// Boolean syntax validation
+function validateBooleanSyntax() {
+    const textarea = document.getElementById('booleanString');
+    const searchString = textarea.value;
+    const validationResult = analyzeBooleanSyntax(searchString);
+    
+    // Update validation display
+    updateSyntaxValidationDisplay(validationResult);
+    
+    return validationResult.isValid;
+}
+
+function analyzeBooleanSyntax(searchString) {
+    const result = {
+        isValid: true,
+        errors: [],
+        warnings: [],
+        suggestions: []
+    };
+    
+    // Check for balanced parentheses
+    const parenthesesStack = [];
+    const parenthesesPositions = [];
+    
+    for (let i = 0; i < searchString.length; i++) {
+        const char = searchString[i];
+        
+        if (char === '(') {
+            parenthesesStack.push({ char: '(', position: i });
+            parenthesesPositions.push({ type: 'open', position: i });
+        } else if (char === ')') {
+            if (parenthesesStack.length === 0) {
+                result.errors.push({
+                    type: 'unmatched_close',
+                    position: i,
+                    message: 'Unmatched closing parenthesis',
+                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis'
+                });
+                result.isValid = false;
+            } else {
+                parenthesesStack.pop();
+            }
+            parenthesesPositions.push({ type: 'close', position: i });
+        }
+    }
+    
+    // Check for unmatched opening parentheses
+    while (parenthesesStack.length > 0) {
+        const unmatched = parenthesesStack.pop();
+        result.errors.push({
+            type: 'unmatched_open',
+            position: unmatched.position,
+            message: 'Unmatched opening parenthesis',
+            suggestion: 'Add a closing parenthesis or remove this opening parenthesis'
+        });
+        result.isValid = false;
+    }
+    
+    // Check for consecutive operators
+    const operatorPattern = /\s+(AND|OR|NOT)\s+/gi;
+    let match;
+    let lastOperatorEnd = -1;
+    
+    while ((match = operatorPattern.exec(searchString)) !== null) {
+        if (lastOperatorEnd !== -1 && match.index === lastOperatorEnd) {
+            result.errors.push({
+                type: 'consecutive_operators',
+                position: match.index,
+                message: 'Consecutive boolean operators',
+                suggestion: 'Remove one of the consecutive operators'
+            });
+            result.isValid = false;
+        }
+        lastOperatorEnd = match.index + match[0].length;
+    }
+    
+    // Check for operators at the beginning or end
+    const trimmedString = searchString.trim();
+    if (trimmedString.match(/^(AND|OR|NOT)\s+/i)) {
+        result.errors.push({
+            type: 'operator_at_start',
+            position: 0,
+            message: 'Boolean operator at the beginning of search',
+            suggestion: 'Remove the operator or add a keyword before it'
+        });
+        result.isValid = false;
+    }
+    
+    if (trimmedString.match(/\s+(AND|OR|NOT)$/i)) {
+        result.errors.push({
+            type: 'operator_at_end',
+            position: searchString.length - 1,
+            message: 'Boolean operator at the end of search',
+            suggestion: 'Remove the operator or add a keyword after it'
+        });
+        result.isValid = false;
+    }
+    
+
+    
+    // Check for empty parentheses
+    const emptyParentheses = searchString.match(/\(\s*\)/g);
+    if (emptyParentheses) {
+        result.errors.push({
+            type: 'empty_parentheses',
+            message: 'Empty parentheses found',
+            suggestion: 'Remove empty parentheses or add content inside them'
+        });
+        result.isValid = false;
+    }
+    
+    // Check for missing spaces around operators
+    const missingSpaces = searchString.match(/\w+(AND|OR|NOT)\w+|\w+(AND|OR|NOT)\s+|\s+(AND|OR|NOT)\w+/gi);
+    if (missingSpaces) {
+        result.warnings.push({
+            type: 'missing_spaces',
+            message: 'Missing spaces around boolean operators',
+            suggestion: 'Add spaces around operators for better readability'
+        });
+    }
+    
+    // Check for double quotes issues
+    const quoteCount = (searchString.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+        result.errors.push({
+            type: 'unmatched_quotes',
+            message: 'Unmatched quotes found',
+            suggestion: 'Check for missing opening or closing quotes'
+        });
+        result.isValid = false;
+    }
+    
+    // Check for very long search strings
+    if (searchString.length > 1000) {
+        result.warnings.push({
+            type: 'long_search',
+            message: 'Search string is very long',
+            suggestion: 'Consider breaking this into multiple searches'
+        });
+    }
+    
+    return result;
+}
+
+function updateSyntaxValidationDisplay(validationResult) {
+    const textarea = document.getElementById('booleanString');
+    const validationContainer = document.getElementById('syntaxValidationContainer');
+    
+    if (!validationContainer) {
+        // Create validation container if it doesn't exist
+        const container = document.createElement('div');
+        container.id = 'syntaxValidationContainer';
+        container.className = 'syntax-validation';
+        textarea.parentNode.insertBefore(container, textarea.nextSibling);
+    }
+    
+    const container = document.getElementById('syntaxValidationContainer');
+    
+    if (validationResult.isValid && validationResult.errors.length === 0 && validationResult.warnings.length === 0) {
+        container.innerHTML = '<div class="validation-success">✅ Search syntax is valid</div>';
+        textarea.classList.remove('syntax-error');
+        textarea.classList.add('syntax-valid');
+    } else {
+        let html = '';
+        
+        // Show errors
+        if (validationResult.errors.length > 0) {
+            html += '<div class="validation-errors">';
+            html += '<h4>❌ Syntax Errors:</h4>';
+            validationResult.errors.forEach(error => {
+                html += `<div class="validation-item error">`;
+                html += `<strong>${error.message}</strong>`;
+                if (error.suggestion) {
+                    html += `<br><em>Suggestion: ${error.suggestion}</em>`;
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+            textarea.classList.add('syntax-error');
+            textarea.classList.remove('syntax-valid');
+        }
+        
+        // Show warnings
+        if (validationResult.warnings.length > 0) {
+            html += '<div class="validation-warnings">';
+            html += '<h4>⚠️ Warnings:</h4>';
+            validationResult.warnings.forEach(warning => {
+                html += `<div class="validation-item warning">`;
+                html += `<strong>${warning.message}</strong>`;
+                if (warning.suggestion) {
+                    html += `<br><em>Suggestion: ${warning.suggestion}</em>`;
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+    }
 }
 
 // Copy the boolean string to clipboard
-function copyBooleanString() {
+async function copyBooleanString() {
     const textarea = document.getElementById('booleanString');
     const searchString = textarea.value.trim();
     
@@ -2274,13 +2881,14 @@ function copyBooleanString() {
             copyBtn.style.backgroundColor = '#27ae60';
         }, 2000);
     } else {
-        alert('Please enter a search string before copying.');
+        await customAlert('Empty Search String', 'Please enter a search string before copying.');
     }
 }
 
 // Clear the boolean string
-function clearBooleanString() {
-    if (confirm('Are you sure you want to clear the boolean string?')) {
+async function clearBooleanString() {
+    const confirmed = await customConfirm('Clear Search String', 'Are you sure you want to clear the boolean string?');
+    if (confirmed) {
         document.getElementById('booleanString').value = '';
     }
 }
@@ -2387,8 +2995,9 @@ function copyRecentSearch(searchString) {
 }
 
 // Delete a recent search
-function deleteRecentSearch(index) {
-    if (confirm('Are you sure you want to delete this search from recently used?')) {
+async function deleteRecentSearch(index) {
+    const confirmed = await customConfirm('Delete Recent Search', 'Are you sure you want to delete this search from recently used?');
+    if (confirmed) {
         recentlyUsedSearches.splice(index, 1);
         saveData();
         renderRecentlyUsedSearches();
@@ -2400,69 +3009,9 @@ function renderKeywordsFromDirectory() {
     const container = document.getElementById('keywordsContainer');
     container.innerHTML = '';
     
-    // Render Titles
-    renderKeywordCategory(container, 'Titles', 'Titles', () => {
-        const keywords = [];
-        Object.keys(categoryData['Titles']['Technical'] || {}).forEach(title => {
-            const options = categoryData['Titles']['Technical'][title] || [];
-            options.forEach(option => keywords.push(option));
-        });
-        Object.keys(categoryData['Titles']['Functional'] || {}).forEach(title => {
-            const options = categoryData['Titles']['Functional'][title] || [];
-            options.forEach(option => keywords.push(option));
-        });
-        return keywords;
-    });
-    
-    // Render Domain
-    renderKeywordCategory(container, 'Domain', 'Domain', () => {
-        const keywords = [];
-        Object.keys(categoryData['Domain'] || {}).forEach(subcategory => {
-            Object.keys(categoryData['Domain'][subcategory] || {}).forEach(subSubcategory => {
-                Object.keys(categoryData['Domain'][subcategory][subSubcategory] || {}).forEach(title => {
-                    const options = categoryData['Domain'][subcategory][subSubcategory][title] || [];
-                    options.forEach(option => keywords.push(option));
-                });
-            });
-        });
-        return keywords;
-    });
-    
-    // Render Industry
-    renderKeywordCategory(container, 'Industry', 'Industry', () => {
-        const keywords = [];
-        Object.keys(categoryData['Industry'] || {}).forEach(subcategory => {
-            Object.keys(categoryData['Industry'][subcategory] || {}).forEach(title => {
-                const options = categoryData['Industry'][subcategory][title] || [];
-                options.forEach(option => keywords.push(option));
-            });
-        });
-        return keywords;
-    });
-    
-    // Render Context
-    renderKeywordCategory(container, 'Context', 'Context', () => {
-        const keywords = [];
-        Object.keys(categoryData['Context'] || {}).forEach(subcategory => {
-            Object.keys(categoryData['Context'][subcategory] || {}).forEach(title => {
-                const options = categoryData['Context'][subcategory][title] || [];
-                options.forEach(option => keywords.push(option));
-            });
-        });
-        return keywords;
-    });
-    
-    // Render Certifications & Clearances
-    renderKeywordCategory(container, 'Certifications & Clearances', 'Certifications & Clearances', () => {
-        const keywords = [];
-        Object.keys(categoryData['Certifications & Clearances'] || {}).forEach(subcategory => {
-            Object.keys(categoryData['Certifications & Clearances'][subcategory] || {}).forEach(title => {
-                const options = categoryData['Certifications & Clearances'][subcategory][title] || [];
-                options.forEach(option => keywords.push(option));
-            });
-        });
-        return keywords;
-    });
+    // Only render Selected Boolean Searches - hide all other categories
+    // The Selected Boolean Searches are rendered separately in renderSelectedBooleanSearches()
+    // This function now does nothing to keep the interface clean
 }
 
 // Render a keyword category
@@ -2608,6 +3157,13 @@ function getCategoryItemCount(category) {
 
 function renderCategorySelects() {
     const select = document.getElementById('builderCategory');
+    
+    // Check if the element exists before trying to access its properties
+    if (!select) {
+        console.log('builderCategory element not found, skipping renderCategorySelects');
+        return;
+    }
+    
     const currentValue = select.value;
     
     select.innerHTML = '<option value="">Select category</option>';
@@ -2724,7 +3280,7 @@ function saveData() {
         updateDataStatus();
     } catch (error) {
         console.error('Error saving data:', error);
-        alert('Warning: Could not save data to localStorage. Your data may not be preserved.');
+        showCustomAlert('Save Warning', 'Warning: Could not save data to localStorage. Your data may not be preserved.');
     }
 }
 
@@ -2755,7 +3311,7 @@ function exportData() {
     link.click();
     
     URL.revokeObjectURL(url);
-    alert('Backup exported successfully!');
+    showCustomAlert('Export Success', 'Backup exported successfully!');
 }
 
 function importData() {
@@ -2779,13 +3335,13 @@ function importData() {
                         
                         saveData();
                         renderAll();
-                        alert('Data imported successfully!');
+                        showCustomAlert('Import Success', 'Data imported successfully!');
                     } else {
-                        alert('Invalid backup file format.');
+                        showCustomAlert('Invalid Format', 'Invalid backup file format.');
                     }
                 } catch (error) {
                     console.error('Error importing data:', error);
-                    alert('Error importing backup file. Please check the file format.');
+                    showCustomAlert('Import Error', 'Error importing backup file. Please check the file format.');
                 }
             };
             reader.readAsText(file);
@@ -2796,14 +3352,123 @@ function importData() {
 }
 
 function clearAllData() {
-    if (confirm('Are you sure you want to clear ALL data? This action cannot be undone.')) {
-        if (confirm('This will delete all your boolean searches, training content, and settings. Are you absolutely sure?')) {
-            localStorage.removeItem('pluginData');
-            initializeDefaultData();
-            renderAll();
-            alert('All data has been cleared.');
+    showCustomConfirm('Clear All Data', 'Are you sure you want to clear ALL data? This action cannot be undone.', (confirmed1) => {
+        if (confirmed1) {
+            showCustomConfirm('Final Confirmation', 'This will delete all your boolean searches, training content, and settings. Are you absolutely sure?', (confirmed2) => {
+                if (confirmed2) {
+                    localStorage.removeItem('pluginData');
+                    initializeDefaultData();
+                    renderAll();
+                    showCustomAlert('Data Cleared', 'All data has been cleared.');
+                }
+            });
         }
-    }
+    });
+}
+
+// Custom confirmation and alert functions
+function customConfirm(title, message) {
+    return new Promise((resolve) => {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('customConfirmModal').style.display = 'block';
+        
+        const yesBtn = document.getElementById('confirmYes');
+        const noBtn = document.getElementById('confirmNo');
+        
+        const handleYes = () => {
+            cleanup();
+            resolve(true);
+        };
+        
+        const handleNo = () => {
+            cleanup();
+            resolve(false);
+        };
+        
+        const cleanup = () => {
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+            document.getElementById('customConfirmModal').style.display = 'none';
+        };
+        
+        yesBtn.addEventListener('click', handleYes);
+        noBtn.addEventListener('click', handleNo);
+    });
+}
+
+function customAlert(title, message) {
+    return new Promise((resolve) => {
+        document.getElementById('alertTitle').textContent = title;
+        document.getElementById('alertMessage').textContent = message;
+        document.getElementById('customAlertModal').style.display = 'block';
+        
+        const okBtn = document.getElementById('alertOk');
+        
+        const handleOk = () => {
+            cleanup();
+            resolve();
+        };
+        
+        const cleanup = () => {
+            okBtn.removeEventListener('click', handleOk);
+            document.getElementById('customAlertModal').style.display = 'none';
+        };
+        
+        okBtn.addEventListener('click', handleOk);
+    });
+}
+
+// Simple synchronous versions for immediate use
+function showCustomConfirm(title, message, callback) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('customConfirmModal').style.display = 'block';
+    
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+    
+    const handleYes = () => {
+        cleanup();
+        callback(true);
+    };
+    
+    const handleNo = () => {
+        cleanup();
+        callback(false);
+    };
+    
+    const cleanup = () => {
+        yesBtn.removeEventListener('click', handleYes);
+        noBtn.removeEventListener('click', handleNo);
+        document.getElementById('customConfirmModal').style.display = 'none';
+    };
+    
+    yesBtn.addEventListener('click', handleYes);
+    noBtn.addEventListener('click', handleNo);
+}
+
+function showCustomAlert(title, message) {
+    document.getElementById('alertTitle').textContent = title;
+    document.getElementById('alertMessage').textContent = message;
+    document.getElementById('customAlertModal').style.display = 'block';
+    
+    const okBtn = document.getElementById('alertOk');
+    
+    const handleOk = () => {
+        okBtn.removeEventListener('click', handleOk);
+        document.getElementById('customAlertModal').style.display = 'none';
+    };
+    
+    okBtn.addEventListener('click', handleOk);
+}
+
+function closeCustomConfirmModal() {
+    document.getElementById('customConfirmModal').style.display = 'none';
+}
+
+function closeCustomAlertModal() {
+    document.getElementById('customAlertModal').style.display = 'none';
 }
 
 function forceReload() {
