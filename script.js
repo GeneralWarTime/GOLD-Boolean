@@ -263,7 +263,7 @@ function renderTitlesSubcategory(contentElement, subcategory) {
                 ➕ Add Boolean Search
             </button>
             <div class="search-filter">
-                <input type="text" id="titleSearch" placeholder="Search titles or boolean terms..." onkeyup="filterTitles('${subcategory}')">
+                <input type="text" id="titleSearch" placeholder="Search boolean terms..." onkeyup="filterTitles('${subcategory}')">
             </div>
             <div class="items-list" id="titlesList">
                 ${renderTitlesList(titles, subcategory)}
@@ -332,7 +332,7 @@ function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategor
                 ➕ Add Boolean Search
             </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterDomainItems('${subcategory}', '${subSubcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search boolean terms..." onkeyup="filterDomainItems('${subcategory}', '${subSubcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderDomainItemsList(items, subcategory, subSubcategory)}
@@ -734,7 +734,7 @@ function renderIndustrySubcategoryItems(contentElement, subcategory) {
                 ➕ Add Boolean Search
             </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterIndustryItems('${subcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search boolean terms..." onkeyup="filterIndustryItems('${subcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderIndustryItemsList(items, subcategory)}
@@ -856,7 +856,7 @@ function renderContextSubcategoryItems(contentElement, subcategory) {
                 ➕ Add Boolean Search
             </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterContextItems('${subcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search boolean terms..." onkeyup="filterContextItems('${subcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderContextItemsList(items, subcategory)}
@@ -945,7 +945,7 @@ function renderCertificationsSubcategoryItems(contentElement, subcategory) {
                 ➕ Add Boolean Search
             </button>
             <div class="search-filter">
-                <input type="text" id="itemSearch" placeholder="Search titles or boolean terms..." onkeyup="filterCertificationsItems('${subcategory}')">
+                <input type="text" id="itemSearch" placeholder="Search boolean terms..." onkeyup="filterCertificationsItems('${subcategory}')">
             </div>
             <div class="items-list" id="itemsList">
                 ${renderCertificationsItemsList(items, subcategory)}
