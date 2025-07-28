@@ -10,22 +10,86 @@ let categoryData = {
         'Functional': {}
     },
     'Domain': {
-        'Agile & Scrum': {},
-        'AI & Machine Learning': {},
-        'Architecture': {},
-        'Change & Transformation': {},
-        'Cyber Security': {},
-        'Data & Analytics': {},
-        'DevOps & Platform Engineering': {},
-        'Digital': {},
-        'Financial Crime': {},
-        'Infrastructure & Cloud': {},
-        'Payments & Banking Tech': {},
-        'Product & Design': {},
-        'Project Services': {},
-        'Risk & Compliance': {},
-        'Software Engineering': {},
-        'Testing & QA': {}
+        'Agile & Scrum': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'AI & Machine Learning': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Architecture': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Change & Transformation': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Cyber Security': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Data & Analytics': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'DevOps & Platform Engineering': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Digital': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Financial Crime': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Infrastructure & Cloud': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Payments & Banking Tech': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Product & Design': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Project Services': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Risk & Compliance': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Software Engineering': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        },
+        'Testing & QA': {
+            'Technology': {},
+            'Framework': {},
+            'Action': {}
+        }
     },
     'Industry': {
         'Insurance': {},
@@ -126,71 +190,58 @@ function selectCategory(category, subcategory = null, subSubcategory = null) {
 function renderCategoryView() {
     const titleElement = document.getElementById('currentCategoryTitle');
     const contentElement = document.getElementById('categoryContent');
-    
     if (!selectedCategory) {
-        titleElement.textContent = 'Select a Category';
         contentElement.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">Click on a category to view and manage its items.</p>';
         return;
     }
-    
     const { category, subcategory, subSubcategory } = selectedCategory;
-    
     if (category === 'Titles') {
         if (subcategory) {
-            // Show items within a subcategory (Technical or Functional)
             titleElement.textContent = `Titles - ${subcategory}`;
             renderTitlesSubcategory(contentElement, subcategory);
         } else {
-            // Show subcategory selection
             titleElement.textContent = 'Titles - Select Type';
+            // Only render the buttons, no <h4> heading
             renderTitlesSubcategorySelection(contentElement);
         }
     } else if (category === 'Domain') {
+        console.log('Domain category selected:', { subcategory, subSubcategory });
         if (!subcategory) {
-            // Show Domain subcategory selection
             titleElement.textContent = 'Domain - Select Type';
             renderDomainSubcategorySelection(contentElement);
         } else if (subcategory && !subSubcategory) {
-            // Show Technology/Framework/Action selection
             titleElement.textContent = `Domain - ${subcategory} - Select Type`;
             renderTechnologyFrameworkActionSelection(contentElement, subcategory);
         } else if (subcategory && subSubcategory) {
-            // Show items within the selected Technology/Framework/Action
+            console.log('Calling renderDomainSubcategoryItems with:', subcategory, subSubcategory);
             titleElement.textContent = `Domain - ${subcategory} - ${subSubcategory}`;
             renderDomainSubcategoryItems(contentElement, subcategory, subSubcategory);
         }
     } else if (category === 'Industry') {
         if (!subcategory) {
-            // Show Industry subcategory selection
             titleElement.textContent = 'Industry - Select Type';
             renderIndustrySubcategorySelection(contentElement);
         } else {
-            // Show boolean search management for the selected Industry subcategory
             titleElement.textContent = `Industry - ${subcategory}`;
             renderIndustrySubcategoryItems(contentElement, subcategory);
         }
     } else if (category === 'Context') {
         if (!subcategory) {
-            // Show Context subcategory selection
             titleElement.textContent = 'Context - Select Type';
             renderContextSubcategorySelection(contentElement);
         } else {
-            // Show boolean search management for the selected Context subcategory
             titleElement.textContent = `Context - ${subcategory}`;
             renderContextSubcategoryItems(contentElement, subcategory);
         }
     } else if (category === 'Certifications & Clearances') {
         if (!subcategory) {
-            // Show Certifications & Clearances subcategory selection
             titleElement.textContent = 'Certifications & Clearances - Select Type';
             renderCertificationsSubcategorySelection(contentElement);
         } else {
-            // Show boolean search management for the selected Certifications & Clearances subcategory
             titleElement.textContent = `Certifications & Clearances - ${subcategory}`;
             renderCertificationsSubcategoryItems(contentElement, subcategory);
         }
     } else {
-        // Show regular category items
         titleElement.textContent = category;
         renderRegularCategory(contentElement, category);
     }
@@ -199,7 +250,6 @@ function renderCategoryView() {
 function renderTitlesSubcategorySelection(contentElement) {
     contentElement.innerHTML = `
         <div class="subcategory-selection">
-            <h4>Select Title Type:</h4>
             <div class="subcategory-buttons">
                 <button class="subcategory-btn" onclick="selectCategory('Titles', 'Technical')">Technical</button>
                 <button class="subcategory-btn" onclick="selectCategory('Titles', 'Functional')">Functional</button>
@@ -229,7 +279,6 @@ function renderTitlesSubcategory(contentElement, subcategory) {
 function renderDomainSubcategorySelection(contentElement) {
     contentElement.innerHTML = `
         <div class="subcategory-selection">
-            <h4>Select Domain Type:</h4>
             <div class="subcategory-buttons">
                 <button class="subcategory-btn" onclick="selectCategory('Domain', 'Agile & Scrum')">Agile & Scrum</button>
                 <button class="subcategory-btn" onclick="selectCategory('Domain', 'AI & Machine Learning')">AI & Machine Learning</button>
@@ -268,6 +317,7 @@ function renderTechnologyFrameworkActionSelection(contentElement, subcategory) {
 function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategory) {
     console.log('Rendering Domain subcategory items:', subcategory, subSubcategory);
     console.log('Current categoryData:', categoryData);
+    console.log('Content element:', contentElement);
     
     // Initialize the data structure if it doesn't exist
     if (!categoryData['Domain'][subcategory]) {
@@ -280,9 +330,9 @@ function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategor
     const items = categoryData['Domain'][subcategory][subSubcategory] || {};
     console.log('Items for this subcategory:', items);
     
-    contentElement.innerHTML = `
+    const htmlContent = `
         <div class="category-management">
-            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('${subcategory}', '${subSubcategory}')">
+            <button class="add-boolean-search-btn" onclick="openAddBooleanSearchModal('Domain', '${subcategory}', '${subSubcategory}')">
                 ➕ Add Boolean Search
             </button>
             <div class="search-filter">
@@ -293,6 +343,10 @@ function renderDomainSubcategoryItems(contentElement, subcategory, subSubcategor
             </div>
         </div>
     `;
+    
+    console.log('Generated HTML:', htmlContent);
+    contentElement.innerHTML = htmlContent;
+    console.log('Content element after setting innerHTML:', contentElement.innerHTML);
 }
 
 function renderDomainItemsList(items, subcategory, subSubcategory) {
@@ -498,8 +552,15 @@ function handleBooleanSearchInputKeypress(event) {
 }
 
 function addBooleanTerm(term) {
-    if (term && !currentBooleanTerms.includes(term)) {
-        currentBooleanTerms.push(term);
+    // Store the term without quotes - quotes will be added when inserted into search string
+    let cleanTerm = term;
+    // Remove quotes if they exist
+    if (term.startsWith('"') && term.endsWith('"')) {
+        cleanTerm = term.slice(1, -1);
+    }
+    
+    if (cleanTerm && !currentBooleanTerms.includes(cleanTerm)) {
+        currentBooleanTerms.push(cleanTerm);
         renderBooleanTermsList();
     }
 }
@@ -513,7 +574,7 @@ function renderBooleanTermsList() {
     const container = document.getElementById('booleanTermsList');
     container.innerHTML = currentBooleanTerms.map(term => `
         <div class="boolean-term-chip">
-            "${term}"
+            ${term}
             <button class="remove-term" onclick="removeBooleanTerm('${term}')">&times;</button>
         </div>
     `).join('');
@@ -649,7 +710,6 @@ function handleDomainTitleEditKeypress(event, inputElement, subcategory, subSubc
 function renderIndustrySubcategorySelection(contentElement) {
     contentElement.innerHTML = `
         <div class="subcategory-selection">
-            <h4>Select Industry Type:</h4>
             <div class="subcategory-buttons">
                 <button class="subcategory-btn" onclick="selectCategory('Industry', 'Insurance')">Insurance</button>
                 <button class="subcategory-btn" onclick="selectCategory('Industry', 'Bank')">Bank</button>
@@ -773,7 +833,6 @@ function filterIndustryItems(subcategory) {
 function renderContextSubcategorySelection(contentElement) {
     contentElement.innerHTML = `
         <div class="subcategory-selection">
-            <h4>Select Context Type:</h4>
             <div class="subcategory-buttons">
                 <button class="subcategory-btn" onclick="selectCategory('Context', 'Methodology')">Methodology</button>
                 <button class="subcategory-btn" onclick="selectCategory('Context', 'Status & Intent')">Status & Intent</button>
@@ -860,7 +919,6 @@ function filterContextItems(subcategory) {
 function renderCertificationsSubcategorySelection(contentElement) {
     contentElement.innerHTML = `
         <div class="subcategory-selection">
-            <h4>Select Certification Type:</h4>
             <div class="subcategory-buttons">
                 <button class="subcategory-btn" onclick="selectCategory('Certifications & Clearances', 'Federal Government Clearances')">Federal Government Clearances</button>
                 <button class="subcategory-btn" onclick="selectCategory('Certifications & Clearances', 'Technical Certifications')">Technical Certifications</button>
@@ -1460,7 +1518,7 @@ function setupBuilderSection() {
     roleSearchInput.addEventListener('input', filterRoles);
     
     // Setup operator buttons
-    const operatorButtons = document.querySelectorAll('.operator-btn');
+    const operatorButtons = document.querySelectorAll('.boolean-operator-btn');
     operatorButtons.forEach(button => {
         button.addEventListener('click', function() {
             insertAtCursor(this.getAttribute('data-value'));
@@ -1629,7 +1687,7 @@ function renderKeywordSelector() {
 
 function renderCategoryBooleanSearches(container, categoryKey) {
     // Get the current data from localStorage
-    const savedData = localStorage.getItem('plugINData');
+    const savedData = localStorage.getItem('pluginData');
     if (!savedData) {
         console.log('No data found in localStorage');
         // Show default subcategories even if no data exists
@@ -1640,17 +1698,30 @@ function renderCategoryBooleanSearches(container, categoryKey) {
     const data = JSON.parse(savedData);
     console.log('Loaded data:', data);
     
-    const categoryData = data[categoryKey];
-    if (!categoryData) {
-        console.log(`No data found for category: ${categoryKey}`);
+    const categoryData = data.categoryData;
+    
+    // Map lowercase keys to capitalized category names
+    const categoryMapping = {
+        'titles': 'Titles',
+        'domain': 'Domain',
+        'industry': 'Industry',
+        'context': 'Context',
+        'certifications': 'Certifications & Clearances'
+    };
+    
+    const actualCategoryKey = categoryMapping[categoryKey];
+    console.log(`Mapping ${categoryKey} to ${actualCategoryKey}`);
+    
+    if (!categoryData || !categoryData[actualCategoryKey]) {
+        console.log(`No data found for category: ${categoryKey} (mapped to ${actualCategoryKey})`);
         // Show default subcategories even if no data exists
         renderDefaultSubcategories(container, categoryKey);
         return;
     }
     
-    console.log(`Rendering ${categoryKey} with data:`, categoryData);
+    console.log(`Rendering ${categoryKey} with data:`, categoryData[actualCategoryKey]);
     
-    Object.keys(categoryData).forEach(subcategory => {
+    Object.keys(categoryData[actualCategoryKey]).forEach(subcategory => {
         console.log(`Processing subcategory: ${subcategory}`);
         
         const subcategoryDiv = document.createElement('div');
@@ -1678,26 +1749,90 @@ function renderCategoryBooleanSearches(container, categoryKey) {
             noSearchesMsg.textContent = 'No boolean searches found in this subcategory.';
             booleanSearchList.appendChild(noSearchesMsg);
         } else {
-            booleanSearches.forEach(search => {
-                const searchItem = document.createElement('div');
-                searchItem.className = 'keyword-checkbox-item';
+            // Group searches by subSubcategory for Domain category
+            if (categoryKey === 'domain') {
+                const groupedSearches = {};
+                booleanSearches.forEach(search => {
+                    const subSubcategory = search.subSubcategory;
+                    if (!groupedSearches[subSubcategory]) {
+                        groupedSearches[subSubcategory] = [];
+                    }
+                    groupedSearches[subSubcategory].push(search);
+                });
                 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `search-${categoryKey}-${subcategory}-${search.title}`;
-                checkbox.value = search.title;
-                checkbox.dataset.category = categoryKey;
-                checkbox.dataset.subcategory = subcategory;
-                checkbox.dataset.searchData = JSON.stringify(search);
-                
-                const label = document.createElement('label');
-                label.htmlFor = `search-${categoryKey}-${subcategory}-${search.title}`;
-                label.textContent = search.title;
-                
-                searchItem.appendChild(checkbox);
-                searchItem.appendChild(label);
-                booleanSearchList.appendChild(searchItem);
-            });
+                Object.keys(groupedSearches).forEach(subSubcategory => {
+                    const subSubcategoryDiv = document.createElement('div');
+                    subSubcategoryDiv.className = 'keyword-sub-subcategory';
+                    subSubcategoryDiv.style.marginLeft = '20px';
+                    subSubcategoryDiv.style.marginTop = '8px';
+                    subSubcategoryDiv.style.padding = '8px';
+                    subSubcategoryDiv.style.border = '1px solid #e5e7eb';
+                    subSubcategoryDiv.style.borderRadius = '4px';
+                    subSubcategoryDiv.style.backgroundColor = '#f9fafb';
+                    
+                    const subSubcategoryHeader = document.createElement('div');
+                    subSubcategoryHeader.style.display = 'flex';
+                    subSubcategoryHeader.style.justifyContent = 'space-between';
+                    subSubcategoryHeader.style.alignItems = 'center';
+                    subSubcategoryHeader.style.marginBottom = '4px';
+                    
+                    subSubcategoryHeader.innerHTML = `
+                        <h6 style="margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text);">${subSubcategory}</h6>
+                        <button class="select-all-btn" style="font-size: 0.8rem; padding: 2px 8px;" onclick="selectAllBooleanSearches('${categoryKey}', '${subcategory}', '${subSubcategory}')">Select All</button>
+                    `;
+                    
+                    const subSubcategoryContent = document.createElement('div');
+                    groupedSearches[subSubcategory].forEach(search => {
+                        const searchItem = document.createElement('div');
+                        searchItem.className = 'keyword-checkbox-item';
+                        searchItem.style.marginBottom = '4px';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `search-${categoryKey}-${subcategory}-${subSubcategory}-${search.title}`;
+                        checkbox.value = search.title;
+                        checkbox.dataset.category = categoryKey;
+                        checkbox.dataset.subcategory = subcategory;
+                        checkbox.dataset.subSubcategory = subSubcategory;
+                        checkbox.dataset.searchData = JSON.stringify(search);
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `search-${categoryKey}-${subcategory}-${subSubcategory}-${search.title}`;
+                        label.textContent = search.title;
+                        label.style.fontSize = '0.85rem';
+                        
+                        searchItem.appendChild(checkbox);
+                        searchItem.appendChild(label);
+                        subSubcategoryContent.appendChild(searchItem);
+                    });
+                    
+                    subSubcategoryDiv.appendChild(subSubcategoryHeader);
+                    subSubcategoryDiv.appendChild(subSubcategoryContent);
+                    booleanSearchList.appendChild(subSubcategoryDiv);
+                });
+            } else {
+                // For other categories, show searches directly
+                booleanSearches.forEach(search => {
+                    const searchItem = document.createElement('div');
+                    searchItem.className = 'keyword-checkbox-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `search-${categoryKey}-${subcategory}-${search.title}`;
+                    checkbox.value = search.title;
+                    checkbox.dataset.category = categoryKey;
+                    checkbox.dataset.subcategory = subcategory;
+                    checkbox.dataset.searchData = JSON.stringify(search);
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `search-${categoryKey}-${subcategory}-${search.title}`;
+                    label.textContent = search.title;
+                    
+                    searchItem.appendChild(checkbox);
+                    searchItem.appendChild(label);
+                    booleanSearchList.appendChild(searchItem);
+                });
+            }
         }
         
         subcategoryDiv.appendChild(subcategoryHeader);
@@ -1731,13 +1866,49 @@ function renderDefaultSubcategories(container, categoryKey) {
         const booleanSearchList = document.createElement('div');
         booleanSearchList.className = 'keyword-list';
         
-        // Add a message for empty subcategories
-        const noSearchesMsg = document.createElement('div');
-        noSearchesMsg.style.padding = '10px';
-        noSearchesMsg.style.color = '#7f8c8d';
-        noSearchesMsg.style.fontStyle = 'italic';
-        noSearchesMsg.textContent = 'No boolean searches found in this subcategory.';
-        booleanSearchList.appendChild(noSearchesMsg);
+        // For Domain category, show the three subcategories (Technology, Framework, Action)
+        if (categoryKey === 'domain') {
+            const subSubcategories = ['Technology', 'Framework', 'Action'];
+            subSubcategories.forEach(subSubcategory => {
+                const subSubcategoryDiv = document.createElement('div');
+                subSubcategoryDiv.className = 'keyword-sub-subcategory';
+                subSubcategoryDiv.style.marginLeft = '20px';
+                subSubcategoryDiv.style.marginTop = '8px';
+                subSubcategoryDiv.style.padding = '8px';
+                subSubcategoryDiv.style.border = '1px solid #e5e7eb';
+                subSubcategoryDiv.style.borderRadius = '4px';
+                subSubcategoryDiv.style.backgroundColor = '#f9fafb';
+                
+                const subSubcategoryHeader = document.createElement('div');
+                subSubcategoryHeader.style.display = 'flex';
+                subSubcategoryHeader.style.justifyContent = 'space-between';
+                subSubcategoryHeader.style.alignItems = 'center';
+                subSubcategoryHeader.style.marginBottom = '4px';
+                
+                subSubcategoryHeader.innerHTML = `
+                    <h6 style="margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--text);">${subSubcategory}</h6>
+                    <button class="select-all-btn" style="font-size: 0.8rem; padding: 2px 8px;" onclick="selectAllBooleanSearches('${categoryKey}', '${subcategory}', '${subSubcategory}')">Select All</button>
+                `;
+                
+                const subSubcategoryContent = document.createElement('div');
+                subSubcategoryContent.style.color = '#7f8c8d';
+                subSubcategoryContent.style.fontStyle = 'italic';
+                subSubcategoryContent.style.fontSize = '0.85rem';
+                subSubcategoryContent.textContent = 'No boolean searches found in this subcategory.';
+                
+                subSubcategoryDiv.appendChild(subSubcategoryHeader);
+                subSubcategoryDiv.appendChild(subSubcategoryContent);
+                booleanSearchList.appendChild(subSubcategoryDiv);
+            });
+        } else {
+            // Add a message for empty subcategories
+            const noSearchesMsg = document.createElement('div');
+            noSearchesMsg.style.padding = '10px';
+            noSearchesMsg.style.color = '#7f8c8d';
+            noSearchesMsg.style.fontStyle = 'italic';
+            noSearchesMsg.textContent = 'No boolean searches found in this subcategory.';
+            booleanSearchList.appendChild(noSearchesMsg);
+        }
         
         subcategoryDiv.appendChild(subcategoryHeader);
         subcategoryDiv.appendChild(booleanSearchList);
@@ -1747,30 +1918,90 @@ function renderDefaultSubcategories(container, categoryKey) {
 
 function getBooleanSearchesFromSubcategory(categoryKey, subcategory) {
     // Get the current data from localStorage
-    const savedData = localStorage.getItem('plugINData');
-    if (!savedData) return [];
+    const savedData = localStorage.getItem('pluginData');
+    console.log('getBooleanSearchesFromSubcategory called with:', categoryKey, subcategory);
+    console.log('savedData exists:', !!savedData);
+    
+    if (!savedData) {
+        console.log('No saved data found');
+        return [];
+    }
     
     const data = JSON.parse(savedData);
-    const categoryData = data[categoryKey];
-    if (!categoryData || !categoryData[subcategory]) return [];
+    console.log('Parsed data:', data);
+    
+    const categoryData = data.categoryData;
+    console.log('categoryData:', categoryData);
+    
+    // Map lowercase keys to capitalized category names
+    const categoryMapping = {
+        'titles': 'Titles',
+        'domain': 'Domain',
+        'industry': 'Industry',
+        'context': 'Context',
+        'certifications': 'Certifications & Clearances'
+    };
+    
+    const actualCategoryKey = categoryMapping[categoryKey];
+    console.log(`Mapping ${categoryKey} to ${actualCategoryKey}`);
+    
+    if (!categoryData || !categoryData[actualCategoryKey] || !categoryData[actualCategoryKey][subcategory]) {
+        console.log('Missing data structure:', {
+            hasCategoryData: !!categoryData,
+            hasCategoryKey: !!(categoryData && categoryData[actualCategoryKey]),
+            hasSubcategory: !!(categoryData && categoryData[actualCategoryKey] && categoryData[actualCategoryKey][subcategory])
+        });
+        return [];
+    }
     
     const booleanSearches = [];
-    categoryData[subcategory].forEach(item => {
-        if (item.booleanOptions && item.booleanOptions.length > 0) {
-            booleanSearches.push({
-                title: item.title,
-                booleanOptions: item.booleanOptions,
-                category: categoryKey,
-                subcategory: subcategory
-            });
-        }
-    });
     
+    // Handle different data structures based on category
+    if (categoryKey === 'domain') {
+        // Domain has three-level structure: Domain -> Subcategory -> Technology/Framework/Action
+        Object.keys(categoryData[actualCategoryKey][subcategory]).forEach(subSubcategory => {
+            const subSubcategoryData = categoryData[actualCategoryKey][subcategory][subSubcategory];
+            Object.keys(subSubcategoryData).forEach(title => {
+                const booleanTerms = subSubcategoryData[title];
+                if (booleanTerms && booleanTerms.length > 0) {
+                    booleanSearches.push({
+                        title: title,
+                        booleanOptions: booleanTerms,
+                        category: categoryKey,
+                        subcategory: subcategory,
+                        subSubcategory: subSubcategory
+                    });
+                }
+            });
+        });
+    } else {
+        // Other categories have two-level structure: Category -> Subcategory
+        Object.keys(categoryData[actualCategoryKey][subcategory]).forEach(title => {
+            const booleanTerms = categoryData[actualCategoryKey][subcategory][title];
+            if (booleanTerms && booleanTerms.length > 0) {
+                booleanSearches.push({
+                    title: title,
+                    booleanOptions: booleanTerms,
+                    category: categoryKey,
+                    subcategory: subcategory
+                });
+            }
+        });
+    }
+    
+    console.log('Found boolean searches:', booleanSearches);
     return booleanSearches;
 }
 
-function selectAllBooleanSearches(categoryKey, subcategory) {
-    const checkboxes = document.querySelectorAll(`input[data-category="${categoryKey}"][data-subcategory="${subcategory}"]`);
+function selectAllBooleanSearches(categoryKey, subcategory, subSubcategory = null) {
+    let selector;
+    if (subSubcategory) {
+        selector = `input[data-category="${categoryKey}"][data-subcategory="${subcategory}"][data-sub-subcategory="${subSubcategory}"]`;
+    } else {
+        selector = `input[data-category="${categoryKey}"][data-subcategory="${subcategory}"]`;
+    }
+    
+    const checkboxes = document.querySelectorAll(selector);
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
     
     checkboxes.forEach(checkbox => {
@@ -1834,9 +2065,19 @@ function renderSelectedBooleanSearches() {
                 <div class="boolean-search-group">
                     <div class="search-title">${search.title}</div>
                     <div class="search-options">
-                        ${search.booleanOptions.map(option => `
-                            <button class="keyword-btn" onclick="insertAtCursor('${option.replace(/'/g, "\\'")}')">${option}</button>
-                        `).join('')}
+                        ${search.booleanOptions.map(option => {
+                            // Remove quotes for display and get the raw term
+                            let displayOption = option;
+                            let rawTerm = option;
+                            
+                            // If the option has quotes, remove them for display and use raw term for insertion
+                            if (option.startsWith('"') && option.endsWith('"')) {
+                                displayOption = option.slice(1, -1);
+                                rawTerm = displayOption; // Use the unquoted version for insertion
+                            }
+                            
+                            return `<button class="keyword-btn" onclick="insertAtCursor('${rawTerm.replace(/'/g, "\\'")}')">${displayOption}</button>`;
+                        }).join('')}
                     </div>
                 </div>
             `).join('')}
@@ -1990,8 +2231,15 @@ function insertAtCursor(text) {
     const end = textarea.selectionEnd;
     const value = textarea.value;
     
-    textarea.value = value.substring(0, start) + text + value.substring(end);
-    textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    // Ensure the text has quotes around it if it's a keyword (not an operator)
+    let textToInsert = text;
+    const operators = ['(', ')', '"', ' AND ', ' OR ', ' NOT ', ' '];
+    if (!operators.includes(text) && !text.startsWith('"') && !text.endsWith('"')) {
+        textToInsert = `"${text}"`;
+    }
+    
+    textarea.value = value.substring(0, start) + textToInsert + value.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + textToInsert.length;
     textarea.focus();
 }
 
@@ -2483,41 +2731,8 @@ function saveData() {
 function updateDataStatus() {
     const statusElement = document.getElementById('dataStatus');
     if (statusElement) {
-        const savedData = localStorage.getItem('pluginData');
-        if (savedData) {
-            try {
-                const data = JSON.parse(savedData);
-                if (data.lastSaved) {
-                    const lastSaved = new Date(data.lastSaved);
-                    const now = new Date();
-                    const diffMinutes = Math.floor((now - lastSaved) / (1000 * 60));
-                    
-                    if (diffMinutes < 1) {
-                        statusElement.textContent = '✓ Saved now';
-                        statusElement.style.backgroundColor = '#27ae60';
-                    } else if (diffMinutes < 5) {
-                        statusElement.textContent = `✓ Saved ${diffMinutes}m ago`;
-                        statusElement.style.backgroundColor = '#27ae60';
-                    } else if (diffMinutes < 60) {
-                        statusElement.textContent = `✓ Saved ${diffMinutes}m ago`;
-                        statusElement.style.backgroundColor = '#f39c12';
-                    } else {
-                        const diffHours = Math.floor(diffMinutes / 60);
-                        statusElement.textContent = `✓ Saved ${diffHours}h ago`;
-                        statusElement.style.backgroundColor = '#e74c3c';
-                    }
-                } else {
-                    statusElement.textContent = '⚠ No save time';
-                    statusElement.style.backgroundColor = '#e74c3c';
-                }
-            } catch (error) {
-                statusElement.textContent = '⚠ Error';
-                statusElement.style.backgroundColor = '#e74c3c';
-            }
-        } else {
-            statusElement.textContent = '⚠ No data';
-            statusElement.style.backgroundColor = '#e74c3c';
-        }
+        statusElement.textContent = '✓ Saved';
+        statusElement.style.backgroundColor = '#27ae60';
     }
 }
 

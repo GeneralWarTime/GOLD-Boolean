@@ -3,24 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlugIN - Keyword Directory</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>PLUG IN OR PLUG OUT</title>
+    <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>PLUG IN OR PLUG OUT</h1>
-            <nav>
+          <div class="header-flex-inline">
+            <div class="header-main-inline">
+              <h1>PLUG IN OR PLUG OUT</h1>
+              <nav>
                 <button class="nav-btn active" data-section="storage">Storage</button>
                 <button class="nav-btn" data-section="builder">Builder</button>
                 <button class="nav-btn" data-section="trainer">Trainer</button>
-            </nav>
-            <div class="backup-controls">
-                <button onclick="exportData()" class="backup-btn" title="Export backup">💾 Export</button>
-                <button onclick="importData()" class="backup-btn" title="Import backup">📁 Import</button>
-                <button onclick="clearAllData()" class="backup-btn danger" title="Clear all data">🗑️ Clear</button>
-                <span id="dataStatus" class="data-status" title="Data status"></span>
+              </nav>
             </div>
+            <div class="data-management-inline-group">
+              <div class="data-actions-row-inline">
+                <button onclick="exportData()" class="backup-btn" title="Download a backup of all your data to your computer.">💾</button>
+                <button onclick="importData()" class="backup-btn" title="Import a backup file to restore your data.">📁</button>
+                <button onclick="clearAllData()" class="backup-btn danger" title="Clear all data from the app. This cannot be undone!">🗑️</button>
+                <span id="dataStatus" class="data-status" title="Shows the current save status. Always 'Saved' if your data is up to date.">✓</span>
+              </div>
+            </div>
+          </div>
         </header>
 
         <main>
@@ -70,43 +76,49 @@
                     </div>
                     
                     <div class="builder-container">
-                        <!-- Boolean String Display -->
-                        <div class="boolean-string-display">
-                            <h3>Your Boolean Search String</h3>
-                            <textarea id="booleanString" placeholder="Click buttons and keywords below to build your search string..."></textarea>
-                            <div class="string-controls">
-                                <button id="copyBooleanString" class="copy-btn">📋 Copy String</button>
-                                <button id="clearBooleanString" class="clear-btn">🗑️ Clear</button>
+                        <!-- Left Column -->
+                        <div class="builder-left-column">
+                            <!-- Boolean String Display -->
+                            <div class="boolean-search-string-section">
+                                <h3>Your Boolean Search String</h3>
+                                <textarea id="booleanString" class="boolean-string-textarea" placeholder="Click buttons and keywords below to build your search string..."></textarea>
+                                <div class="boolean-string-actions">
+                                    <button id="copyBooleanString" class="copy-btn">📋 Copy String</button>
+                                    <button id="clearBooleanString" class="clear-btn">🗑️ Clear</button>
+                                </div>
+                            </div>
+
+                            <!-- Boolean Operators -->
+                            <div class="boolean-operators-section">
+                                <h3>Boolean Operators</h3>
+                                <div class="boolean-operators-grid">
+                                    <button class="boolean-operator-btn" data-value="(">(</button>
+                                    <button class="boolean-operator-btn" data-value=")">)</button>
+                                    <button class="boolean-operator-btn" data-value='"'">"</button>
+                                    <button class="boolean-operator-btn" data-value=" AND ">AND</button>
+                                    <button class="boolean-operator-btn" data-value=" OR ">OR</button>
+                                    <button class="boolean-operator-btn" data-value=" NOT ">NOT</button>
+                                    <button class="boolean-operator-btn" data-value=" ">SPACE</button>
+                                </div>
+                            </div>
+
+                            <!-- Recently Used -->
+                            <div class="recently-used-section">
+                                <h3>Recently Used</h3>
+                                <div id="recentlyUsedContainer" class="recently-used-container">
+                                    <!-- Recently used searches will be populated here -->
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Boolean Operators -->
-                        <div class="boolean-operators">
-                            <h3>Boolean Operators</h3>
-                            <div class="operator-buttons">
-                                <button class="operator-btn" data-value="(">(</button>
-                                <button class="operator-btn" data-value=")">)</button>
-                                <button class="operator-btn" data-value='"'">"</button>
-                                <button class="operator-btn" data-value=" AND ">AND</button>
-                                <button class="operator-btn" data-value=" OR ">OR</button>
-                                <button class="operator-btn" data-value=" NOT ">NOT</button>
-                                <button class="operator-btn" data-value=" ">SPACE</button>
-                            </div>
-                        </div>
-
-                        <!-- Recently Used -->
-                        <div class="recently-used-section">
-                            <h3>Recently Used</h3>
-                            <div id="recentlyUsedContainer" class="recently-used-container">
-                                <!-- Recently used searches will be populated here -->
-                            </div>
-                        </div>
-
-                        <!-- Keywords from Directory -->
-                        <div class="keywords-section">
-                            <h3>Keywords from Directory</h3>
-                            <div id="keywordsContainer" class="keywords-container">
-                                <!-- Keywords will be populated here -->
+                        <!-- Right Column -->
+                        <div class="builder-right-column">
+                            <!-- Keywords from Directory -->
+                            <div class="keywords-directory-section">
+                                <h3>Keywords from Directory</h3>
+                                <div id="keywordsContainer" class="keywords-container">
+                                    <!-- Keywords will be populated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -268,6 +280,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=19"></script>
 </body>
 </html> 
