@@ -139,6 +139,13 @@ document.addEventListener('DOMContentLoaded', function() {
     renderAll();
     updateDataStatus();
     loadInteractionMode();
+    initDarkMode();
+    
+    // Setup dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+    }
     
     // Update data status every minute
     setInterval(updateDataStatus, 60000);
@@ -1517,10 +1524,12 @@ function setupBuilderSection() {
     const addRoleBtn = document.getElementById('addNewRoleBtn');
     const backBtn = document.getElementById('backToDashboardBtn');
     const roleSearchInput = document.getElementById('roleSearch');
+    const filterRolesBtn = document.getElementById('filterRolesBtn');
     
     addRoleBtn.addEventListener('click', addNewRole);
     backBtn.addEventListener('click', backToDashboard);
     roleSearchInput.addEventListener('input', filterRoles);
+    filterRolesBtn.addEventListener('click', openRoleFilterModal);
     
     // Setup operator buttons
     const operatorButtons = document.querySelectorAll('.boolean-operator-btn');
@@ -2397,13 +2406,16 @@ function renderRolesDashboard(searchTerm = '') {
     const container = document.getElementById('rolesContainer');
     container.innerHTML = '';
     
-    // Filter roles based on search term
-    const filteredRoles = searchTerm 
+    // First apply search term filter
+    let filteredRoles = searchTerm 
         ? roles.filter(role => 
             role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (role.booleanString && role.booleanString.toLowerCase().includes(searchTerm.toLowerCase()))
         )
         : roles;
+    
+    // Then apply additional filter criteria (client, ID, title)
+    filteredRoles = filterRolesByCriteria(filteredRoles);
     
     if (roles.length === 0) {
         container.innerHTML = `
@@ -3626,4 +3638,88 @@ function initializeDefaultData() {
         }
     };
     trainingContent = [];
-} 
+}
+
+// Role Filter Functionality
+let currentRoleFilters = {
+    client: '',
+    id: '',
+    title: ''
+};
+
+function openRoleFilterModal() {
+    document.getElementById('roleFilterModal').style.display = 'block';
+    // Load current filter values
+    document.getElementById('filterClient').value = currentRoleFilters.client;
+    document.getElementById('filterID').value = currentRoleFilters.id;
+    document.getElementById('filterTitle').value = currentRoleFilters.title;
+}
+
+function closeRoleFilterModal() {
+    document.getElementById('roleFilterModal').style.display = 'none';
+}
+
+function clearRoleFilters() {
+    currentRoleFilters = {
+        client: '',
+        id: '',
+        title: ''
+    };
+    document.getElementById('filterClient').value = '';
+    document.getElementById('filterID').value = '';
+    document.getElementById('filterTitle').value = '';
+    renderRolesDashboard();
+}
+
+function applyRoleFilters() {
+    currentRoleFilters = {
+        client: document.getElementById('filterClient').value.toLowerCase(),
+        id: document.getElementById('filterID').value.toLowerCase(),
+        title: document.getElementById('filterTitle').value.toLowerCase()
+    };
+    closeRoleFilterModal();
+    renderRolesDashboard();
+}
+
+function filterRolesByCriteria(roles) {
+    if (!currentRoleFilters.client && !currentRoleFilters.id && !currentRoleFilters.title) {
+        return roles;
+    }
+
+    return roles.filter(role => {
+        const matchesClient = !currentRoleFilters.client || 
+            (role.client && role.client.toLowerCase().includes(currentRoleFilters.client));
+        const matchesID = !currentRoleFilters.id || 
+            (role.id && role.id.toLowerCase().includes(currentRoleFilters.id));
+        const matchesTitle = !currentRoleFilters.title || 
+            (role.title && role.title.toLowerCase().includes(currentRoleFilters.title));
+        
+        return matchesClient && matchesID && matchesTitle;
+    });
+}
+
+// Dark Mode Functionality
+function initDarkMode() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateDarkModeButton(savedTheme === 'dark');
+    }
+}
+
+function toggleDarkMode() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateDarkModeButton(newTheme === 'dark');
+}
+
+function updateDarkModeButton(isDark) {
+    const toggleBtn = document.getElementById('darkModeToggle');
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isDark ? '☀️' : '🌙';
+        toggleBtn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+    }
+}

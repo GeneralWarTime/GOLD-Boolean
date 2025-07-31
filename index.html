@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLUG IN OR PLUG OUT</title>
-    <link rel="stylesheet" href="styles.css?v=19">
+    <title>BULLION GOLD</title>
+    <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
     <div class="container">
         <header>
           <div class="header-flex-inline">
             <div class="header-main-inline">
-              <h1>PLUG IN OR PLUG OUT</h1>
+              <h1 class="bullion-title"><span class="bullion-text">BULLION</span> <span class="gold-text"><i>GOLD</i></span></h1>
               <nav>
                 <button class="nav-btn active" data-section="storage">Storage</button>
-                <button class="nav-btn" data-section="builder">Builder</button>
+                <button class="nav-btn bullion-btn" data-section="builder">Builder</button>
                 <button class="nav-btn" data-section="trainer">Trainer</button>
               </nav>
             </div>
@@ -23,6 +23,7 @@
                 <button onclick="exportData()" class="backup-btn" title="Download a backup of all your data to your computer.">💾</button>
                 <button onclick="importData()" class="backup-btn" title="Import a backup file to restore your data.">📁</button>
                 <button onclick="clearAllData()" class="backup-btn danger" title="Clear all data from the app. This cannot be undone!">🗑️</button>
+                <button id="darkModeToggle" class="backup-btn dark-mode-btn" title="Toggle dark mode">🌙</button>
                 <span id="dataStatus" class="data-status" title="Shows the current save status. Always 'Saved' if your data is up to date.">✓</span>
               </div>
             </div>
@@ -57,7 +58,10 @@
                 <div id="roleDashboard" class="role-dashboard">
                     <div class="dashboard-header">
                         <h2>Role Management Dashboard</h2>
-                        <button id="addNewRoleBtn" class="add-role-btn">➕ Add New Role</button>
+                        <div class="dashboard-actions">
+                            <button id="filterRolesBtn" class="filter-btn">🔍 Filter Roles</button>
+                            <button id="addNewRoleBtn" class="add-role-btn">➕ Add New Role</button>
+                        </div>
                     </div>
                     
                     <div class="search-section">
@@ -335,6 +339,41 @@
         </div>
     </div>
 
-    <script src="script.js?v=40"></script>
+    <!-- Role Filter Modal -->
+    <div id="roleFilterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Filter Roles</h3>
+                <span class="close" onclick="closeRoleFilterModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="filterClient">Client:</label>
+                    <select id="filterClient" class="form-input">
+                        <option value="">All clients</option>
+                        <option value="Commonwealth Bank">Commonwealth Bank</option>
+                        <option value="Westpac">Westpac</option>
+                        <option value="Mercer">Mercer</option>
+                        <option value="EML">EML</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filterID">ID:</label>
+                    <input type="text" id="filterID" placeholder="Enter role ID">
+                </div>
+                <div class="form-group">
+                    <label for="filterTitle">Title:</label>
+                    <input type="text" id="filterTitle" placeholder="Enter role title">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="clearRoleFilters()" class="clear-filters-btn">Clear Filters</button>
+                <button onclick="applyRoleFilters()" class="apply-filters-btn">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=41"></script>
 </body>
 </html> 
