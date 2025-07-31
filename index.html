@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BULLION GOLD</title>
-    <link rel="stylesheet" href="styles.css?v=20">
+            <link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
     <div class="container">
@@ -61,6 +61,7 @@
                         <div class="dashboard-actions">
                             <button id="filterRolesBtn" class="filter-btn">🔍 Filter Roles</button>
                             <button id="addNewRoleBtn" class="add-role-btn">➕ Add New Role</button>
+                            <button id="demoModeBtn" class="demo-btn">🎯 Demo Mode</button>
                         </div>
                     </div>
                     
@@ -139,13 +140,30 @@
 
                         <!-- Right Column -->
                         <div class="builder-right-column">
-                            <!-- Keywords from Directory -->
-                            <div class="keywords-directory-section">
-                                <h3>Keywords from Directory</h3>
-                                <div id="keywordsContainer" class="keywords-container">
-                                    <!-- Keywords will be populated here -->
+                            <!-- Temporary Keyword Pool Section -->
+                            <div class="temp-keyword-pool-section">
+                                <h3>Temporary Keyword Pool</h3>
+                                <div class="temp-keyword-input-container">
+                                    <input type="text" id="tempKeywordInput" class="temp-keyword-input" placeholder="Add temporary keywords...">
+                                    <button id="addTempKeywordBtn" class="add-temp-keyword-btn">Add</button>
+                                </div>
+                                <div class="temp-keywords-container">
+                                    <div class="temp-keywords-list" id="tempKeywordsList">
+                                        <!-- Temporary keywords will be rendered here -->
+                                    </div>
+                                    <div class="temp-keywords-actions">
+                                        <button id="clearTempKeywordsBtn" class="clear-temp-keywords-btn">Clear All</button>
+                                        <button id="addTempToBooleanBtn" class="add-temp-to-boolean-btn">Add All to Search</button>
+                                    </div>
                                 </div>
                             </div>
+
+                            <div class="selected-keywords-section">
+                                <div id="selectedKeywordsContainer" class="selected-keywords-container">
+                                    <!-- Selected keywords will be displayed here -->
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -374,6 +392,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=41"></script>
+            <script src="script.js?v=55"></script>
 </body>
 </html> 

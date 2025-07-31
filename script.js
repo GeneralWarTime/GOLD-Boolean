@@ -134,12 +134,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadData();
     setupNavigation();
     setupStorageSection();
-    setupBuilderSection();
-    setupTrainerSection();
-    renderAll();
+            setupBuilderSection();
+        setupTrainerSection();
+        renderAll();
     updateDataStatus();
     loadInteractionMode();
     initDarkMode();
+    setupTempKeywordPool();
     
     // Setup dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
@@ -1525,11 +1526,13 @@ function setupBuilderSection() {
     const backBtn = document.getElementById('backToDashboardBtn');
     const roleSearchInput = document.getElementById('roleSearch');
     const filterRolesBtn = document.getElementById('filterRolesBtn');
+    const demoModeBtn = document.getElementById('demoModeBtn');
     
     addRoleBtn.addEventListener('click', addNewRole);
     backBtn.addEventListener('click', backToDashboard);
     roleSearchInput.addEventListener('input', filterRoles);
     filterRolesBtn.addEventListener('click', openRoleFilterModal);
+    demoModeBtn.addEventListener('click', enterDemoMode);
     
     // Setup operator buttons
     const operatorButtons = document.querySelectorAll('.boolean-operator-btn');
@@ -2323,7 +2326,7 @@ function saveSelectedKeywords() {
     // Go to boolean builder
     document.getElementById('roleDashboard').style.display = 'none';
     document.getElementById('booleanBuilder').style.display = 'block';
-    document.getElementById('currentRoleTitle').textContent = `Boolean Builder - ${currentRole.name}`;
+            document.getElementById('currentRoleTitle').textContent = `${currentRole.name}`;
     
     // Load role-specific data
     document.getElementById('booleanString').value = currentRole.booleanString || '';
@@ -2336,7 +2339,11 @@ function saveSelectedKeywords() {
 }
 
 function renderSelectedBooleanSearches() {
-    const container = document.getElementById('keywordsContainer');
+    const container = document.getElementById('selectedKeywordsContainer');
+    if (!container) {
+        console.log('selectedKeywordsContainer not found in renderSelectedBooleanSearches');
+        return;
+    }
     
     // Add selected boolean searches section at the top
     const selectedSection = document.createElement('div');
@@ -2345,7 +2352,7 @@ function renderSelectedBooleanSearches() {
     // Create header with title and add button
     const headerHtml = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 style="margin: 0;">Selected Boolean Searches</h4>
+            <h4 style="margin: 0;">Selected Keywords</h4>
             <button class="add-more-searches-btn" onclick="openKeywordSelector()" style="
                 background: var(--primary);
                 color: white;
@@ -2483,7 +2490,7 @@ function openRole(roleId) {
         document.getElementById('booleanBuilder').style.display = 'block';
         
         // Update title
-        document.getElementById('currentRoleTitle').textContent = `Boolean Builder - ${role.name}`;
+        document.getElementById('currentRoleTitle').textContent = `${role.name}`;
         
         // Load role-specific data
         document.getElementById('booleanString').value = role.booleanString || '';
@@ -2539,6 +2546,37 @@ async function deleteRole(roleId) {
             saveData();
             renderRolesDashboard();
         }
+    }
+}
+
+// Demo Mode functionality
+function enterDemoMode() {
+    // Hide the role dashboard
+    const roleDashboard = document.getElementById('roleDashboard');
+    const booleanBuilder = document.getElementById('booleanBuilder');
+    
+    if (roleDashboard && booleanBuilder) {
+        roleDashboard.style.display = 'none';
+        booleanBuilder.style.display = 'block';
+        
+        // Set demo mode title
+        const currentRoleTitle = document.getElementById('currentRoleTitle');
+        if (currentRoleTitle) {
+            currentRoleTitle.textContent = 'Demo Mode - Boolean Keyword Builder';
+        }
+        
+        // Clear any existing boolean string
+        const booleanString = document.getElementById('booleanString');
+        if (booleanString) {
+            booleanString.value = '';
+            validateBooleanSyntax();
+        }
+        
+        // Render keywords from directory for demo
+        renderKeywordsFromDirectory();
+        
+        // Render recently used searches
+        renderRecentlyUsedSearches();
     }
 }
 
@@ -3018,7 +3056,11 @@ async function deleteRecentSearch(index) {
 
 // Render keywords from directory
 function renderKeywordsFromDirectory() {
-    const container = document.getElementById('keywordsContainer');
+    const container = document.getElementById('selectedKeywordsContainer');
+    if (!container) {
+        console.log('selectedKeywordsContainer not found');
+        return;
+    }
     container.innerHTML = '';
     
     // Only render Selected Boolean Searches - hide all other categories
@@ -3722,4 +3764,193 @@ function updateDarkModeButton(isDark) {
         toggleBtn.innerHTML = isDark ? '☀️' : '🌙';
         toggleBtn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
     }
+}
+
+// Temporary keyword pool functionality
+let tempKeywords = [];
+
+function setupTempKeywordPool() {
+    console.log('Setting up temp keyword pool...');
+    const addBtn = document.getElementById('addTempKeywordBtn');
+    const input = document.getElementById('tempKeywordInput');
+    const clearBtn = document.getElementById('clearTempKeywordsBtn');
+    const addAllBtn = document.getElementById('addTempToBooleanBtn');
+    const tempKeywordsList = document.getElementById('tempKeywordsList');
+
+    console.log('Found elements:', { addBtn, input, clearBtn, addAllBtn, tempKeywordsList });
+
+    // Add keyword button event
+    if (addBtn) {
+        console.log('Adding click event to add button');
+        addBtn.addEventListener('click', addTempKeyword);
+    } else {
+        console.log('Add button not found!');
+    }
+
+    // Enter key in input field
+    if (input) {
+        console.log('Adding keypress event to input');
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                console.log('Enter key pressed');
+                addTempKeyword();
+            }
+        });
+    } else {
+        console.log('Input field not found!');
+    }
+
+    // Clear all button
+    if (clearBtn) {
+        console.log('Adding click event to clear button');
+        clearBtn.addEventListener('click', clearTempKeywords);
+    } else {
+        console.log('Clear button not found!');
+    }
+
+    // Add all to boolean button
+    if (addAllBtn) {
+        console.log('Adding click event to add all button');
+        addAllBtn.addEventListener('click', function() {
+            console.log('Add all button clicked!');
+            addTempToBoolean();
+        });
+    } else {
+        console.log('Add all button not found!');
+    }
+
+    // Event delegation for temp keywords list
+    if (tempKeywordsList) {
+        console.log('Adding click event to temp keywords list');
+        tempKeywordsList.addEventListener('click', function(e) {
+            const target = e.target;
+            
+            // Handle keyword click (add to boolean search)
+            if (target.classList.contains('temp-keyword-text')) {
+                const keyword = target.textContent;
+                console.log('Temp keyword clicked:', keyword);
+                // Use insertAtCursor like the keyword selector does
+                insertAtCursor(keyword);
+            }
+            
+            // Handle remove button click
+            if (target.classList.contains('remove-temp-keyword-btn')) {
+                const keywordItem = target.closest('.temp-keyword-item');
+                if (keywordItem) {
+                    const keyword = keywordItem.querySelector('.temp-keyword-text').textContent;
+                    removeTempKeyword(keyword);
+                }
+            }
+        });
+    } else {
+        console.log('Temp keywords list not found!');
+    }
+
+    renderTempKeywords();
+}
+
+function addTempKeyword() {
+    console.log('addTempKeyword called');
+    const input = document.getElementById('tempKeywordInput');
+    if (!input) {
+        console.log('Input field not found in addTempKeyword');
+        return;
+    }
+
+    const keyword = input.value.trim();
+    console.log('Input value:', keyword);
+    if (keyword) {
+        // Add quotes if not already present
+        const quotedKeyword = keyword.startsWith('"') && keyword.endsWith('"') ? keyword : `"${keyword}"`;
+        console.log('Quoted keyword:', quotedKeyword);
+        
+        if (!tempKeywords.includes(quotedKeyword)) {
+            console.log('Adding keyword to tempKeywords array');
+            tempKeywords.push(quotedKeyword);
+            console.log('Current tempKeywords:', tempKeywords);
+            renderTempKeywords();
+        } else {
+            console.log('Keyword already exists in tempKeywords');
+        }
+        
+        input.value = '';
+    } else {
+        console.log('No keyword entered');
+    }
+}
+
+function removeTempKeyword(keyword) {
+    const index = tempKeywords.indexOf(keyword);
+    if (index > -1) {
+        tempKeywords.splice(index, 1);
+        renderTempKeywords();
+    }
+}
+
+function clearTempKeywords() {
+    tempKeywords = [];
+    renderTempKeywords();
+}
+
+function addTempKeywordToBoolean(keyword) {
+    const booleanInput = document.getElementById('booleanString');
+    if (!booleanInput) {
+        console.log('booleanString not found');
+        return;
+    }
+
+    const currentValue = booleanInput.value;
+    const newValue = currentValue ? `${currentValue} AND ${keyword}` : keyword;
+    booleanInput.value = newValue;
+    
+    // Trigger input event to update any listeners
+    booleanInput.dispatchEvent(new Event('input'));
+}
+
+function addTempToBoolean() {
+    console.log('addTempToBoolean called');
+    console.log('tempKeywords:', tempKeywords);
+    
+    if (tempKeywords.length === 0) {
+        console.log('No temp keywords to add');
+        return;
+    }
+
+    const booleanInput = document.getElementById('booleanString');
+    if (!booleanInput) {
+        console.log('booleanString not found');
+        return;
+    }
+
+    const currentValue = booleanInput.value;
+    console.log('Current boolean input value:', currentValue);
+    
+    const keywordsString = tempKeywords.join(' AND ');
+    console.log('Keywords string:', keywordsString);
+    
+    const newValue = currentValue ? `${currentValue} AND (${keywordsString})` : `(${keywordsString})`;
+    console.log('New value:', newValue);
+    
+    booleanInput.value = newValue;
+    
+    // Trigger input event to update any listeners
+    booleanInput.dispatchEvent(new Event('input'));
+    console.log('Updated boolean input value:', booleanInput.value);
+}
+
+function renderTempKeywords() {
+    const tempKeywordsList = document.getElementById('tempKeywordsList');
+    if (!tempKeywordsList) return;
+
+    tempKeywordsList.innerHTML = '';
+    
+    tempKeywords.forEach(keyword => {
+        const keywordItem = document.createElement('div');
+        keywordItem.className = 'temp-keyword-item';
+        keywordItem.innerHTML = `
+            <span class="temp-keyword-text" style="cursor: pointer;">${keyword}</span>
+            <button class="remove-temp-keyword-btn" title="Remove">×</button>
+        `;
+        tempKeywordsList.appendChild(keywordItem);
+    });
 }
