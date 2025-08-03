@@ -2619,27 +2619,42 @@ function insertAtCursor(text) {
         console.log('Current operator:', currentOperator);
         console.log('Operator to insert:', operatorToInsert);
         
+        // Function to check if there's a valid keyword or quoted phrase before cursor
+        function hasValidKeywordBeforeCursor() {
+            const textBeforeCursor = value.substring(0, start).trim();
+            if (textBeforeCursor.length === 0) return false;
+            
+            // Check if the text before cursor ends with a valid keyword or quoted phrase
+            // Valid patterns: word, "quoted phrase", or word followed by space
+            const validEndings = [
+                /[a-zA-Z0-9]+$/,           // Ends with alphanumeric word
+                /"[^"]*"$/,                // Ends with quoted phrase
+                /[a-zA-Z0-9]+\s+$/         // Ends with word followed by space
+            ];
+            
+            return validEndings.some(pattern => pattern.test(textBeforeCursor));
+        }
+        
         // Check if the cursor is at the end or if we need to add operator
         const cursorAtEnd = start === value.length;
         const lastChar = value.charAt(start - 1);
-        
-        // We need an operator if:
-        // 1. We're at the end of the textarea AND there's existing content
-        // 2. The last character is not a space, opening parenthesis, or opening quote
-        // 3. OR if we're inserting in the middle and need an operator
-        const needsOperator = (cursorAtEnd && value.trim() !== '') || 
-                             (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"');
+        const hasValidKeyword = hasValidKeywordBeforeCursor();
         
         console.log('Cursor at end:', cursorAtEnd);
         console.log('Last char:', lastChar);
-        console.log('Needs operator:', needsOperator);
+        console.log('Has valid keyword before cursor:', hasValidKeyword);
         
-        if (cursorAtEnd && needsOperator) {
-            textToInsert = operatorToInsert + textToInsert;
-            console.log('Adding operator at end');
-        } else if (!cursorAtEnd && needsOperator) {
-            textToInsert = operatorToInsert + textToInsert;
-            console.log('Adding operator in middle');
+        // Only add operator if there's a valid keyword before the cursor
+        if (hasValidKeyword) {
+            if (cursorAtEnd) {
+                textToInsert = operatorToInsert + textToInsert;
+                console.log('Adding operator at end');
+            } else if (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"') {
+                textToInsert = operatorToInsert + textToInsert;
+                console.log('Adding operator in middle');
+            }
+        } else {
+            console.log('No valid keyword before cursor - skipping operator');
         }
     }
     
@@ -2716,10 +2731,11 @@ function analyzeBooleanSyntax(searchString) {
         isValid: true,
         errors: [],
         warnings: [],
-        suggestions: []
+        suggestions: [],
+        fixes: []
     };
     
-    // Check for balanced parentheses
+    // 1. ✅ Smart Error Detection - Enhanced Parentheses Checking
     const parenthesesStack = [];
     const parenthesesPositions = [];
     
@@ -2734,8 +2750,9 @@ function analyzeBooleanSyntax(searchString) {
                 result.errors.push({
                     type: 'unmatched_close',
                     position: i,
-                    message: 'Unmatched closing parenthesis',
-                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis'
+                    message: '❌ Unmatched closing parenthesis',
+                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis',
+
                 });
                 result.isValid = false;
             } else {
@@ -2751,93 +2768,359 @@ function analyzeBooleanSyntax(searchString) {
         result.errors.push({
             type: 'unmatched_open',
             position: unmatched.position,
-            message: 'Unmatched opening parenthesis',
-            suggestion: 'Add a closing parenthesis or remove this opening parenthesis'
+            message: '❌ Unmatched opening parenthesis',
+            suggestion: 'Add a closing parenthesis or remove this opening parenthesis',
+            
         });
         result.isValid = false;
     }
     
-    // Check for consecutive operators
+    // 2. ✅ Dangling Operators Detection
     const operatorPattern = /\s+(AND|OR|NOT)\s+/gi;
     let match;
     let lastOperatorEnd = -1;
     
     while ((match = operatorPattern.exec(searchString)) !== null) {
+        const operatorStart = match.index;
+        const operatorEnd = match.index + match[0].length;
+        
+        // Check for consecutive operators
         if (lastOperatorEnd !== -1 && match.index === lastOperatorEnd) {
             result.errors.push({
                 type: 'consecutive_operators',
                 position: match.index,
-                message: 'Consecutive boolean operators',
-                suggestion: 'Remove one of the consecutive operators'
+                message: '❌ Consecutive boolean operators',
+                suggestion: 'Remove one of the consecutive operators',
+
             });
             result.isValid = false;
         }
-        lastOperatorEnd = match.index + match[0].length;
+        
+        // Check for dangling operators (no valid keyword before or after)
+        const beforeOperator = searchString.substring(0, operatorStart).trim();
+        const afterOperator = searchString.substring(operatorEnd).trim();
+        
+        const hasValidBefore = /[a-zA-Z0-9]+$|"[^"]*"$/.test(beforeOperator);
+        const hasValidAfter = /^[a-zA-Z0-9]+|^"[^"]*"/.test(afterOperator);
+        
+        if (!hasValidBefore) {
+            result.errors.push({
+                type: 'dangling_operator_start',
+                position: operatorStart,
+                message: '❌ Dangling operator - no valid keyword before',
+                suggestion: 'Remove the operator or add a keyword before it'
+            });
+            result.isValid = false;
+        }
+        
+        if (!hasValidAfter && afterOperator.length > 0) {
+            result.errors.push({
+                type: 'dangling_operator_end',
+                position: operatorEnd,
+                message: '❌ Dangling operator - no valid keyword after',
+                suggestion: 'Remove the operator or add a keyword after it'
+            });
+            result.isValid = false;
+        }
+        
+        lastOperatorEnd = operatorEnd;
     }
     
-    // Check for operators at the beginning or end
+    // 3. ✅ Empty Groups Detection
+    const emptyParentheses = searchString.match(/\(\s*\)/g);
+    if (emptyParentheses) {
+        result.errors.push({
+            type: 'empty_parentheses',
+            message: '❌ Empty parentheses found',
+            suggestion: 'Remove empty parentheses or add content inside them'
+        });
+        result.isValid = false;
+    }
+    
+    // 4. ✅ Empty Quotation Marks Detection
+    const emptyQuotes = searchString.match(/""/g);
+    if (emptyQuotes) {
+        result.errors.push({
+            type: 'empty_quotes',
+            message: '❌ Empty quotation marks found',
+            suggestion: 'Remove empty quotes or add content inside them'
+        });
+        result.isValid = false;
+    }
+    
+    // 5. ✅ Unquoted Multi-Word Phrases Detection (Fixed)
+    // Only flag actual multi-word phrases, not keyword OR keyword patterns
+    const unquotedPhrases = searchString.match(/\b[A-Za-z]+\s+[A-Za-z]+(?=\s+(?:AND|OR|NOT)|$)/g);
+    if (unquotedPhrases) {
+        unquotedPhrases.forEach(phrase => {
+            // Skip if the phrase contains a boolean operator
+            if (/\b(AND|OR|NOT)\b/i.test(phrase)) {
+                return;
+            }
+            
+            // Skip if it's a valid keyword OR keyword pattern
+            const words = phrase.split(/\s+/);
+            if (words.length === 2 && /^(AND|OR|NOT)$/i.test(words[1])) {
+                return;
+            }
+            
+            result.warnings.push({
+                type: 'unquoted_phrase',
+                message: `⚠️ Unquoted multi-word phrase: "${phrase}"`,
+                suggestion: 'Consider wrapping in quotes for exact matching'
+            });
+        });
+    }
+    
+    // 6. ✅ Enhanced Quote Validation
+    const quoteCount = (searchString.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+        result.errors.push({
+            type: 'unmatched_quotes',
+            message: '❌ Unmatched quotes found',
+            suggestion: 'Check for missing opening or closing quotes'
+        });
+        result.isValid = false;
+    }
+    
+    // 7. ✅ Operators at Start/End Detection
     const trimmedString = searchString.trim();
     if (trimmedString.match(/^(AND|OR|NOT)\s+/i)) {
         result.errors.push({
             type: 'operator_at_start',
             position: 0,
-            message: 'Boolean operator at the beginning of search',
+            message: '❌ Boolean operator at the beginning of search',
             suggestion: 'Remove the operator or add a keyword before it'
         });
         result.isValid = false;
     }
     
     if (trimmedString.match(/\s+(AND|OR|NOT)$/i)) {
+        const match = trimmedString.match(/\s+(AND|OR|NOT)$/i);
         result.errors.push({
             type: 'operator_at_end',
-            position: searchString.length - 1,
-            message: 'Boolean operator at the end of search',
-            suggestion: 'Remove the operator or add a keyword after it'
-        });
-        result.isValid = false;
-    }
-    
+            position: searchString.length - match[0].length,
+            message: '❌ Boolean operator at the end of search',
+            suggestion: 'Remove the operator or add a keyword after it',
 
-    
-    // Check for empty parentheses
-    const emptyParentheses = searchString.match(/\(\s*\)/g);
-    if (emptyParentheses) {
-        result.errors.push({
-            type: 'empty_parentheses',
-            message: 'Empty parentheses found',
-            suggestion: 'Remove empty parentheses or add content inside them'
         });
         result.isValid = false;
     }
     
-    // Check for missing spaces around operators
+    // 8. ✅ Missing Spaces Warning
     const missingSpaces = searchString.match(/\w+(AND|OR|NOT)\w+|\w+(AND|OR|NOT)\s+|\s+(AND|OR|NOT)\w+/gi);
     if (missingSpaces) {
         result.warnings.push({
             type: 'missing_spaces',
-            message: 'Missing spaces around boolean operators',
-            suggestion: 'Add spaces around operators for better readability'
+            message: '⚠️ Missing spaces around boolean operators',
+            suggestion: 'Add spaces around operators for better readability',
+
         });
     }
     
-    // Check for double quotes issues
-    const quoteCount = (searchString.match(/"/g) || []).length;
-    if (quoteCount % 2 !== 0) {
-        result.errors.push({
-            type: 'unmatched_quotes',
-            message: 'Unmatched quotes found',
-            suggestion: 'Check for missing opening or closing quotes'
-        });
-        result.isValid = false;
-    }
-    
-    // Check for very long search strings
+    // 9. ✅ Long Search Warning
     if (searchString.length > 1000) {
         result.warnings.push({
             type: 'long_search',
-            message: 'Search string is very long',
+            message: '⚠️ Search string is very long',
             suggestion: 'Consider breaking this into multiple searches'
         });
+    }
+    
+    // 10. ✅ Whitespace in Quoted Phrases Warning
+    const quotedPhrases = searchString.match(/"[^"]*"/g);
+    if (quotedPhrases) {
+        quotedPhrases.forEach(phrase => {
+            const content = phrase.slice(1, -1); // Remove quotes
+            if (content.startsWith(' ') || content.endsWith(' ')) {
+                result.warnings.push({
+                    type: 'whitespace_in_quotes',
+                    message: `⚠️ Unnecessary whitespace in quoted phrase: ${phrase}`,
+                    suggestion: 'This phrase has unnecessary whitespace inside the quotes — it may return no results.',
+
+                });
+            }
+        });
+    }
+    
+    // 11. ✅ Lowercase Boolean Operators Warning (Fixed)
+    // Only flag actual lowercase operators, not uppercase ones
+    const lowercaseOperators = searchString.match(/\s+(and|or|not)\s+/gi);
+    if (lowercaseOperators) {
+        lowercaseOperators.forEach(operator => {
+            const trimmedOperator = operator.trim();
+            // Only flag if it's actually lowercase (not mixed case)
+            if (trimmedOperator === trimmedOperator.toLowerCase()) {
+                const upperOperator = trimmedOperator.toUpperCase();
+                result.warnings.push({
+                    type: 'lowercase_operators',
+                    message: `⚠️ Lowercase boolean operator: "${trimmedOperator}"`,
+                    suggestion: 'Convert to uppercase for consistency',
+
+                });
+            }
+        });
+    }
+    
+    // 12. ✅ Enhanced Empty Groups Detection (including cases like (AND "Java"))
+    const emptyGroups = searchString.match(/\(\s*(AND|OR|NOT)\s+[^)]*\)/g);
+    if (emptyGroups) {
+        emptyGroups.forEach(group => {
+            result.errors.push({
+                type: 'invalid_empty_group',
+                message: `❌ Invalid group structure: ${group}`,
+                suggestion: 'Remove the group or fix the structure',
+
+            });
+            result.isValid = false;
+        });
+    }
+    
+    // 13. ✅ Enhanced Consecutive Operators Detection
+    const consecutiveOperators = searchString.match(/\s+(AND|OR|NOT)\s+(AND|OR|NOT)\s+/gi);
+    if (consecutiveOperators) {
+        consecutiveOperators.forEach(match => {
+            result.errors.push({
+                type: 'consecutive_operators_enhanced',
+                message: `❌ Consecutive operators: ${match.trim()}`,
+                suggestion: 'Remove one of the consecutive operators',
+
+            });
+            result.isValid = false;
+        });
+    }
+    
+
+    
+    // 15. ✅ Proper Quote Separation Detection (Completely Rewritten)
+    // Use proper tokenization to avoid false positives on valid expressions
+    
+    // Helper function to properly tokenize Boolean expressions
+    function tokenizeBooleanExpression(str) {
+        const tokens = [];
+        let current = '';
+        let inQuotes = false;
+        let i = 0;
+        
+        while (i < str.length) {
+            const char = str[i];
+            
+            if (char === '"') {
+                if (inQuotes) {
+                    // End of quoted phrase
+                    current += char;
+                    tokens.push({ type: 'quoted', value: current, start: i - current.length + 1, end: i });
+                    current = '';
+                    inQuotes = false;
+                } else {
+                    // Start of quoted phrase
+                    if (current.trim()) {
+                        tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });
+                        current = '';
+                    }
+                    current = char;
+                    inQuotes = true;
+                }
+            } else if (inQuotes) {
+                current += char;
+            } else if (/\s/.test(char)) {
+                // Whitespace - potential separator
+                if (current.trim()) {
+                    tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });
+                    current = '';
+                }
+            } else {
+                current += char;
+            }
+            i++;
+        }
+        
+        // Handle any remaining content
+        if (current.trim()) {
+            tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });
+        }
+        
+        return tokens;
+    }
+    
+    // Tokenize the search string
+    const tokens = tokenizeBooleanExpression(searchString);
+    
+    // Pattern 1: Check for fused quoted + unquoted keywords
+    for (let i = 0; i < tokens.length - 1; i++) {
+        const current = tokens[i];
+        const next = tokens[i + 1];
+        
+        if (current.type === 'quoted' && next.type === 'unquoted') {
+            // Check if there's a valid separator between them
+            const betweenText = searchString.substring(current.end + 1, next.start);
+            const hasValidSeparator = /\s+(AND|OR|NOT)\s+/.test(betweenText) || 
+                                    /\s+/.test(betweenText) ||
+                                    /^\(/.test(betweenText);
+            
+            if (!hasValidSeparator) {
+                result.errors.push({
+                    type: 'improper_quote_separation',
+                    position: current.end + 1,
+                    message: `❌ Quoted phrase not separated from unquoted keyword: "${current.value}${next.value}"`,
+                    suggestion: 'Add a space or operator between quoted and unquoted terms'
+                });
+                result.isValid = false;
+            }
+        }
+    }
+    
+    // Pattern 2: Check for consecutive quoted phrases without separator
+    for (let i = 0; i < tokens.length - 1; i++) {
+        const current = tokens[i];
+        const next = tokens[i + 1];
+        
+        if (current.type === 'quoted' && next.type === 'quoted') {
+            // Check if there's a valid separator between them
+            const betweenText = searchString.substring(current.end + 1, next.start);
+            const hasValidSeparator = /\s+(AND|OR|NOT)\s+/.test(betweenText) || 
+                                    /\s+/.test(betweenText) ||
+                                    /^\(/.test(betweenText);
+            
+            if (!hasValidSeparator) {
+                result.errors.push({
+                    type: 'consecutive_quotes',
+                    position: current.end + 1,
+                    message: `❌ Consecutive quoted phrases without separator: ${current.value}${next.value}`,
+                    suggestion: 'Add an operator between quoted phrases'
+                });
+                result.isValid = false;
+            }
+        }
+    }
+    
+    // Pattern 3: Check for operators inside quotes (only if truly inside a single quote)
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        
+        if (token.type === 'quoted') {
+            // Check if the quoted content contains a boolean operator
+            const content = token.value.slice(1, -1); // Remove quotes
+            const operatorMatch = content.match(/\b(AND|OR|NOT)\b/i);
+            
+            if (operatorMatch) {
+                // Check if this is part of a valid pattern like "phrase" OR "phrase"
+                const beforeToken = i > 0 ? tokens[i - 1] : null;
+                const afterToken = i < tokens.length - 1 ? tokens[i + 1] : null;
+                
+                const isValidPattern = (beforeToken && beforeToken.type === 'quoted') ||
+                                    (afterToken && afterToken.type === 'quoted');
+                
+                if (!isValidPattern) {
+                    result.warnings.push({
+                        type: 'operator_in_quotes',
+                        position: token.start,
+                        message: `⚠️ Boolean operator "${operatorMatch[1]}" found inside quotes: ${token.value}`,
+                        suggestion: 'Extract the operator or ensure it\'s part of an intentional phrase'
+                    });
+                }
+            }
+        }
     }
     
     return result;
@@ -2857,47 +3140,105 @@ function updateSyntaxValidationDisplay(validationResult) {
     
     const container = document.getElementById('syntaxValidationContainer');
     
+    // 4. ✅ Real-Time Syntax Validation - Color-coded styling
+    textarea.classList.remove('syntax-error', 'syntax-warning', 'syntax-valid');
+    
     if (validationResult.isValid && validationResult.errors.length === 0 && validationResult.warnings.length === 0) {
-        container.innerHTML = '<div class="validation-success">✅ Search syntax is valid</div>';
-        textarea.classList.remove('syntax-error');
+        // 🟢 Green = valid
         textarea.classList.add('syntax-valid');
-    } else {
-        let html = '';
+        container.innerHTML = `
+            <div class="validation-success">
+                <div class="validation-header">
+                    <span class="validation-icon">✅</span>
+                    <span class="validation-title">Search syntax is valid</span>
+                </div>
+            </div>
+        `;
+    } else if (validationResult.errors.length > 0) {
+        // 🔴 Red = error
+        textarea.classList.add('syntax-error');
+        let html = `
+            <div class="validation-errors">
+                <div class="validation-header">
+                    <span class="validation-icon">❌</span>
+                    <span class="validation-title">${validationResult.errors.length} Syntax Error${validationResult.errors.length > 1 ? 's' : ''} Found:</span>
+                </div>
+                <div class="validation-list">
+        `;
         
-        // Show errors
-        if (validationResult.errors.length > 0) {
-            html += '<div class="validation-errors">';
-            html += '<h4>❌ Syntax Errors:</h4>';
-            validationResult.errors.forEach(error => {
-                html += `<div class="validation-item error">`;
-                html += `<strong>${error.message}</strong>`;
-                if (error.suggestion) {
-                    html += `<br><em>Suggestion: ${error.suggestion}</em>`;
-                }
-                html += '</div>';
-            });
-            html += '</div>';
-            textarea.classList.add('syntax-error');
-            textarea.classList.remove('syntax-valid');
-        }
+        validationResult.errors.forEach((error, index) => {
+            html += `
+                <div class="validation-item error" onclick="highlightError(${error.position || 0})">
+                    <div class="validation-item-content">
+                        <div class="validation-message">${error.message}</div>
+                        <div class="validation-suggestion">${error.suggestion}</div>
+                    </div>
+                </div>
+            `;
+        });
         
-        // Show warnings
+        html += '</div></div>';
+        
+        // Add warnings if any
         if (validationResult.warnings.length > 0) {
-            html += '<div class="validation-warnings">';
-            html += '<h4>⚠️ Warnings:</h4>';
-            validationResult.warnings.forEach(warning => {
-                html += `<div class="validation-item warning">`;
-                html += `<strong>${warning.message}</strong>`;
-                if (warning.suggestion) {
-                    html += `<br><em>Suggestion: ${warning.suggestion}</em>`;
-                }
-                html += '</div>';
+            html += `
+                <div class="validation-warnings">
+                    <div class="validation-header">
+                        <span class="validation-icon">⚠️</span>
+                        <span class="validation-title">${validationResult.warnings.length} Warning${validationResult.warnings.length > 1 ? 's' : ''}:</span>
+                    </div>
+                    <div class="validation-list">
+            `;
+            
+            validationResult.warnings.forEach((warning, index) => {
+                html += `
+                    <div class="validation-item warning">
+                        <div class="validation-item-content">
+                            <div class="validation-message">${warning.message}</div>
+                            <div class="validation-suggestion">${warning.suggestion}</div>
+                        </div>
+                    </div>
+                `;
             });
-            html += '</div>';
+            
+            html += '</div></div>';
         }
         
         container.innerHTML = html;
+    } else if (validationResult.warnings.length > 0) {
+        // 🟡 Yellow = warning
+        textarea.classList.add('syntax-warning');
+        let html = `
+            <div class="validation-warnings">
+                <div class="validation-header">
+                    <span class="validation-icon">⚠️</span>
+                    <span class="validation-title">${validationResult.warnings.length} Warning${validationResult.warnings.length > 1 ? 's' : ''}:</span>
+                </div>
+                <div class="validation-list">
+        `;
+        
+        validationResult.warnings.forEach((warning, index) => {
+            html += `
+                <div class="validation-item warning">
+                    <div class="validation-item-content">
+                        <div class="validation-message">${warning.message}</div>
+                        <div class="validation-suggestion">${warning.suggestion}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+        container.innerHTML = html;
     }
+}
+
+
+
+function highlightError(position) {
+    const textarea = document.getElementById('booleanString');
+    textarea.focus();
+    textarea.setSelectionRange(position, position + 1);
 }
 
 // Copy the boolean string to clipboard

@@ -1308,75 +1308,165 @@ button:hover, .save-btn:hover, .builder-btn:hover {
     background-color: #2980b9;
 }
 
-/* Syntax Validation Styles */
+/* 4. ✅ Enhanced Syntax Validation Styles */
 .syntax-validation {
-    margin-top: 10px;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 14px;
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
 }
 
 .validation-success {
-    color: #27ae60;
-    background-color: #d5f4e6;
-    padding: 8px 12px;
-    border-radius: 4px;
-    border-left: 4px solid #27ae60;
+    color: var(--success);
+    font-weight: 500;
 }
 
-.validation-errors {
-    margin-bottom: 10px;
+.validation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
 }
 
-.validation-warnings {
-    margin-bottom: 10px;
+.validation-icon {
+    font-size: 1.2em;
+    margin-right: 8px;
 }
 
-.validation-errors h4,
-.validation-warnings h4 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
+.validation-title {
     font-weight: 600;
+    font-size: 1.1em;
+}
+
+.fix-all-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.fix-all-btn:hover {
+    background: var(--primary-hover);
+}
+
+.validation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .validation-item {
-    padding: 8px 12px;
-    margin-bottom: 6px;
-    border-radius: 4px;
-    border-left: 4px solid;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: var(--radius);
+    border-left: 3px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.validation-item:hover {
+    transform: translateX(2px);
 }
 
 .validation-item.error {
-    background-color: #fdf2f2;
-    border-left-color: #e74c3c;
-    color: #c0392b;
+    background: #fef2f2;
+    border-left-color: var(--danger);
 }
 
 .validation-item.warning {
-    background-color: #fef9e7;
-    border-left-color: #f39c12;
-    color: #d68910;
+    background: #fffbeb;
+    border-left-color: var(--warning);
 }
 
-.validation-item strong {
-    display: block;
+.validation-item-content {
+    flex: 1;
+}
+
+.validation-message {
+    font-weight: 600;
     margin-bottom: 4px;
+    color: var(--text);
 }
 
-.validation-item em {
+.validation-suggestion {
+    color: var(--text-secondary);
+    font-size: 0.9em;
     font-style: italic;
-    color: #7f8c8d;
 }
 
-/* Textarea validation states */
+.fix-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+.fix-btn:hover {
+    background: var(--primary-hover);
+}
+
+/* Real-time validation styling */
 .boolean-string-textarea.syntax-error {
-    border-color: #e74c3c;
-    box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+    border-color: var(--danger);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+    background: #fef2f2;
+}
+
+.boolean-string-textarea.syntax-warning {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+    background: #fffbeb;
 }
 
 .boolean-string-textarea.syntax-valid {
-  border-color: #27ae60;
-  box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+    border-color: var(--success);
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+    background: #f0fdf4;
+}
+
+/* Dark mode validation styles */
+[data-theme="dark"] .validation-item.error {
+    background: #2d1b1b;
+    border-left-color: #ef4444;
+}
+
+[data-theme="dark"] .validation-item.warning {
+    background: #2d1f1b;
+    border-left-color: #f59e0b;
+}
+
+[data-theme="dark"] .boolean-string-textarea.syntax-error {
+    background: #2d1b1b;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .boolean-string-textarea.syntax-warning {
+    background: #2d1f1b;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .boolean-string-textarea.syntax-valid {
+    background: #1b2d1b;
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
 }
 
 /* Add More Searches Button */
