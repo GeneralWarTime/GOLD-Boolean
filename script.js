@@ -4,6 +4,9 @@ let categories = {
     secondary: ['Context', 'Certifications & Clearances']
 };
 
+// Saved searches storage
+let savedSearches = [];
+
 let categoryData = {
     'Titles': {
         'Technical': {},
@@ -139,14 +142,9 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAll();
     updateDataStatus();
     loadInteractionMode();
-    initDarkMode();
     setupTempKeywordPool();
-    
-    // Setup dark mode toggle
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', toggleDarkMode);
-    }
+    setupKeyboardShortcuts();
+    setupSavedSearchesFilter();
     
     // Update data status every minute
     setInterval(updateDataStatus, 60000);
@@ -2330,7 +2328,8 @@ function saveSelectedKeywords() {
     
     // Load role-specific data
     document.getElementById('booleanString').value = currentRole.booleanString || '';
-    recentlyUsedSearches = currentRole.recentlyUsedSearches || [];
+            recentlyUsedSearches = currentRole.recentlyUsedSearches || [];
+        savedSearches = currentRole.savedSearches || [];
     
     // Render role-specific content
     renderKeywordsFromDirectory();
@@ -2495,6 +2494,7 @@ function openRole(roleId) {
         // Load role-specific data
         document.getElementById('booleanString').value = role.booleanString || '';
         recentlyUsedSearches = role.recentlyUsedSearches || [];
+        savedSearches = role.savedSearches || [];
         
         // Render role-specific content
         renderKeywordsFromDirectory();
@@ -2508,6 +2508,7 @@ function backToDashboard() {
     if (currentRole) {
         currentRole.booleanString = document.getElementById('booleanString').value;
         currentRole.recentlyUsedSearches = recentlyUsedSearches;
+        currentRole.savedSearches = savedSearches;
         currentRole.lastModified = new Date().toISOString();
         saveData();
     }
@@ -2577,6 +2578,7 @@ function enterDemoMode() {
         
         // Render recently used searches
         renderRecentlyUsedSearches();
+        renderSavedSearches();
     }
 }
 
@@ -2720,10 +2722,145 @@ function validateBooleanSyntax() {
     const searchString = textarea.value;
     const validationResult = analyzeBooleanSyntax(searchString);
     
+    const originalErrorCount = validationResult.errors.length;
+    console.log('Before deduplication:', originalErrorCount, 'errors');
+    
+    // Deduplicate errors before displaying
+    validationResult.errors = deduplicateErrors(validationResult.errors);
+    validationResult.warnings = deduplicateErrors(validationResult.warnings);
+    
+    console.log('After deduplication:', validationResult.errors.length, 'errors');
+    
+    // Check for error threshold modals using original count (including duplicates)
+    console.log('Checking error threshold modals. Original error count:', originalErrorCount);
+    if (originalErrorCount > 0) {
+        console.log('Calling showErrorThresholdModal with original error count:', originalErrorCount);
+        showErrorThresholdModal(originalErrorCount);
+    }
+    
     // Update validation display
     updateSyntaxValidationDisplay(validationResult);
     
     return validationResult.isValid;
+}
+
+// Function to deduplicate errors and warnings by grouping identical messages
+function deduplicateErrors(errors) {
+    console.log('Deduplicating errors:', errors.length, 'errors');
+    const errorGroups = {};
+    
+    errors.forEach(error => {
+        // Create a unique key based on error type and a normalized message
+        // For dynamic messages, we'll group by type and base message pattern
+        let normalizedMessage = error.message;
+        
+        // Handle dynamic content in error messages
+        if (error.type === 'unmatched_open') {
+            // Group all unmatched opening parenthesis errors together
+            normalizedMessage = `❌ Unmatched opening parenthesis`;
+        } else if (error.type === 'unmatched_close') {
+            // Group all unmatched closing parenthesis errors together
+            normalizedMessage = `❌ Unmatched closing parenthesis`;
+        } else if (error.type === 'operator_in_quotes') {
+            // Extract the operator name for grouping
+            const operatorMatch = error.message.match(/Boolean operator "([^"]+)" found inside quotes/);
+            if (operatorMatch) {
+                normalizedMessage = `⚠️ Boolean operator "OPERATOR" found inside quotes: QUOTED_PHRASE`;
+            }
+        } else if (error.type === 'unquoted_phrase') {
+            // Group all unquoted phrase warnings together
+            normalizedMessage = `⚠️ Unquoted multi-word phrase: "PHRASE"`;
+        } else if (error.type === 'whitespace_in_quotes') {
+            // Group all whitespace in quotes warnings together
+            normalizedMessage = `⚠️ Unnecessary whitespace in quoted phrase: QUOTED_PHRASE`;
+        } else if (error.type === 'lowercase_operators') {
+            // Group all lowercase operator warnings together
+            normalizedMessage = `⚠️ Lowercase boolean operator: "OPERATOR"`;
+        } else if (error.type === 'consecutive_operators_enhanced') {
+            // Group consecutive operators by the pattern
+            normalizedMessage = `❌ Consecutive operators: OPERATOR_PATTERN`;
+        } else if (error.type === 'improper_quote_separation') {
+            // Group quote separation errors
+            normalizedMessage = `❌ Quoted phrase not separated from unquoted keyword: PHRASE_PATTERN`;
+        } else if (error.type === 'consecutive_quotes') {
+            // Group consecutive quotes errors
+            normalizedMessage = `❌ Consecutive quoted phrases without separator: QUOTE_PATTERN`;
+        } else if (error.type === 'invalid_empty_group') {
+            // Group invalid empty group errors
+            normalizedMessage = `❌ Invalid group structure: GROUP_PATTERN`;
+        } else if (error.type === 'empty_parentheses') {
+            // Group empty parentheses errors
+            normalizedMessage = `❌ Empty parentheses found`;
+        } else if (error.type === 'empty_quotes') {
+            // Group empty quotes errors
+            normalizedMessage = `❌ Empty quotation marks found`;
+        } else if (error.type === 'unmatched_quotes') {
+            // Group unmatched quotes errors
+            normalizedMessage = `❌ Unmatched quotes found`;
+        } else if (error.type === 'operator_at_start') {
+            // Group operator at start errors
+            normalizedMessage = `❌ Boolean operator at the beginning of search`;
+        } else if (error.type === 'operator_at_end') {
+            // Group operator at end errors
+            normalizedMessage = `❌ Boolean operator at the end of search`;
+        } else if (error.type === 'dangling_operator_start') {
+            // Group dangling operator start errors
+            normalizedMessage = `❌ Dangling operator - no valid keyword before`;
+        } else if (error.type === 'dangling_operator_end') {
+            // Group dangling operator end errors
+            normalizedMessage = `❌ Dangling operator - no valid keyword after`;
+        } else if (error.type === 'consecutive_operators') {
+            // Group consecutive operators errors
+            normalizedMessage = `❌ Consecutive boolean operators`;
+        } else if (error.type === 'missing_spaces') {
+            // Group missing spaces warnings
+            normalizedMessage = `⚠️ Missing spaces around boolean operators`;
+        } else if (error.type === 'long_search') {
+            // Group long search warnings
+            normalizedMessage = `⚠️ Search string is very long`;
+        }
+        
+        const key = `${error.type}:${normalizedMessage}`;
+        
+        if (!errorGroups[key]) {
+            errorGroups[key] = {
+                ...error,
+                count: 1,
+                positions: error.position !== undefined ? [error.position] : []
+            };
+        } else {
+            errorGroups[key].count++;
+            if (error.position !== undefined) {
+                errorGroups[key].positions.push(error.position);
+            }
+        }
+    });
+    
+    // Convert grouped errors back to array with count display
+    const result = Object.values(errorGroups).map(groupedError => {
+        const deduplicatedError = { ...groupedError };
+        
+        // Update message to include count if more than 1
+        if (groupedError.count > 1) {
+            // Remove the count from the message if it already has one
+            const baseMessage = groupedError.message.replace(/\s*\(x\d+\)$/, '');
+            deduplicatedError.message = `${baseMessage} (x${groupedError.count})`;
+        }
+        
+        // Keep the first position for highlighting (most relevant)
+        if (deduplicatedError.positions && deduplicatedError.positions.length > 0) {
+            deduplicatedError.position = deduplicatedError.positions[0];
+        }
+        
+        // Remove the count and positions properties to maintain original structure
+        delete deduplicatedError.count;
+        delete deduplicatedError.positions;
+        
+        return deduplicatedError;
+    });
+    
+    console.log('Deduplication result:', result.length, 'errors after deduplication');
+    return result;
 }
 
 function analyzeBooleanSyntax(searchString) {
@@ -2775,7 +2912,7 @@ function analyzeBooleanSyntax(searchString) {
         result.isValid = false;
     }
     
-    // 2. ✅ Dangling Operators Detection
+    // 2. ✅ Enhanced Dangling Operators Detection
     const operatorPattern = /\s+(AND|OR|NOT)\s+/gi;
     let match;
     let lastOperatorEnd = -1;
@@ -2791,17 +2928,17 @@ function analyzeBooleanSyntax(searchString) {
                 position: match.index,
                 message: '❌ Consecutive boolean operators',
                 suggestion: 'Remove one of the consecutive operators',
-
             });
             result.isValid = false;
         }
         
-        // Check for dangling operators (no valid keyword before or after)
+        // Enhanced check for dangling operators
         const beforeOperator = searchString.substring(0, operatorStart).trim();
         const afterOperator = searchString.substring(operatorEnd).trim();
         
-        const hasValidBefore = /[a-zA-Z0-9]+$|"[^"]*"$/.test(beforeOperator);
-        const hasValidAfter = /^[a-zA-Z0-9]+|^"[^"]*"/.test(afterOperator);
+        // Check if there's valid content before the operator
+        const hasValidBefore = checkValidContentBefore(beforeOperator);
+        const hasValidAfter = checkValidContentAfter(afterOperator);
         
         if (!hasValidBefore) {
             result.errors.push({
@@ -2824,6 +2961,66 @@ function analyzeBooleanSyntax(searchString) {
         }
         
         lastOperatorEnd = operatorEnd;
+    }
+    
+    // Helper functions for enhanced operator validation
+    function checkValidContentBefore(text) {
+        if (!text) return false;
+        
+        // Check for quoted terms at the end
+        if (/"$/.test(text)) {
+            return true;
+        }
+        
+        // Check for alphanumeric terms at the end
+        if (/[a-zA-Z0-9]+$/.test(text)) {
+            return true;
+        }
+        
+        // Check for closing parenthesis at the end (valid expression)
+        if (/\)$/.test(text)) {
+            return true;
+        }
+        
+        // Check for valid expression ending with closing parenthesis
+        // This handles cases like ("GOLD" OR "Boolean")
+        const trimmed = text.trim();
+        if (trimmed.endsWith(')')) {
+            // Count parentheses to ensure it's a balanced expression
+            let openCount = 0;
+            let closeCount = 0;
+            for (let i = 0; i < trimmed.length; i++) {
+                if (trimmed[i] === '(') openCount++;
+                if (trimmed[i] === ')') closeCount++;
+            }
+            // If we have more closing than opening, it's a valid expression
+            if (closeCount > openCount) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    function checkValidContentAfter(text) {
+        if (!text) return false;
+        
+        // Check for quoted terms at the start
+        if (/^"/.test(text)) {
+            return true;
+        }
+        
+        // Check for alphanumeric terms at the start
+        if (/^[a-zA-Z0-9]+/.test(text)) {
+            return true;
+        }
+        
+        // Check for opening parenthesis at the start (valid expression)
+        if (/^\(/.test(text)) {
+            return true;
+        }
+        
+        return false;
     }
     
     // 3. ✅ Empty Groups Detection
@@ -3046,7 +3243,7 @@ function analyzeBooleanSyntax(searchString) {
     // Tokenize the search string
     const tokens = tokenizeBooleanExpression(searchString);
     
-    // Pattern 1: Check for fused quoted + unquoted keywords
+    // Pattern 1: Check for fused quoted + unquoted keywords (IMPROVED)
     for (let i = 0; i < tokens.length - 1; i++) {
         const current = tokens[i];
         const next = tokens[i + 1];
@@ -3056,7 +3253,16 @@ function analyzeBooleanSyntax(searchString) {
             const betweenText = searchString.substring(current.end + 1, next.start);
             const hasValidSeparator = /\s+(AND|OR|NOT)\s+/.test(betweenText) || 
                                     /\s+/.test(betweenText) ||
-                                    /^\(/.test(betweenText);
+                                    /^\(/.test(betweenText) ||
+                                    /^\)/.test(betweenText) ||
+                                    /^(AND|OR|NOT)/.test(next.value) ||
+                                    /^\)$/.test(next.value) ||
+                                    /^\($/.test(next.value);
+            
+            // Additional check: if the next token is just a parenthesis, it's valid
+            if (next.value === ')' || next.value === '(') {
+                continue; // Skip this check - parentheses are valid after quotes
+            }
             
             if (!hasValidSeparator) {
                 result.errors.push({
@@ -3303,6 +3509,7 @@ function addToRecentlyUsed(searchString) {
     // Save to current role if in role context
     if (currentRole) {
         currentRole.recentlyUsedSearches = recentlyUsedSearches;
+        currentRole.savedSearches = savedSearches;
         currentRole.lastModified = new Date().toISOString();
     }
     
@@ -3331,6 +3538,14 @@ function renderRecentlyUsedSearches() {
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'recent-search-actions';
         
+        // Star button for saving/unsaving
+        const starBtn = document.createElement('button');
+        starBtn.className = 'recent-search-btn star-search-btn';
+        const isSaved = savedSearches.some(saved => saved.search === item.search);
+        starBtn.innerHTML = isSaved ? '★' : '☆';
+        starBtn.title = isSaved ? 'Remove from saved searches' : 'Add to saved searches';
+        starBtn.onclick = () => toggleSavedSearch(item.search);
+        
         const useBtn = document.createElement('button');
         useBtn.className = 'recent-search-btn use-search-btn';
         useBtn.textContent = 'Use';
@@ -3346,6 +3561,7 @@ function renderRecentlyUsedSearches() {
         deleteBtn.textContent = 'Delete';
         deleteBtn.onclick = () => deleteRecentSearch(index);
         
+        actionsDiv.appendChild(starBtn);
         actionsDiv.appendChild(useBtn);
         actionsDiv.appendChild(copyBtn);
         actionsDiv.appendChild(deleteBtn);
@@ -3392,6 +3608,148 @@ async function deleteRecentSearch(index) {
         recentlyUsedSearches.splice(index, 1);
         saveData();
         renderRecentlyUsedSearches();
+    }
+}
+
+// Toggle saved search
+function toggleSavedSearch(searchString) {
+    const existingIndex = savedSearches.findIndex(saved => saved.search === searchString);
+    
+    if (existingIndex !== -1) {
+        // Remove from saved searches
+        savedSearches.splice(existingIndex, 1);
+        console.log('Removed from saved searches:', searchString);
+    } else {
+        // Add to saved searches
+        savedSearches.unshift({
+            search: searchString,
+            timestamp: Date.now()
+        });
+        console.log('Added to saved searches:', searchString);
+    }
+    
+    saveData();
+    renderRecentlyUsedSearches();
+    renderSavedSearches();
+}
+
+// Render saved searches
+function renderSavedSearches() {
+    const container = document.getElementById('savedSearchesContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (savedSearches.length === 0) {
+        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic; text-align: center;">No saved searches. Click the star (☆) next to any search to save it.</p>';
+        return;
+    }
+    
+    savedSearches.forEach((item, index) => {
+        const searchDiv = document.createElement('div');
+        searchDiv.className = 'saved-search-item';
+        
+        const searchText = document.createElement('div');
+        searchText.className = 'saved-search-text';
+        searchText.textContent = item.search;
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'saved-search-actions';
+        
+        const starBtn = document.createElement('button');
+        starBtn.className = 'saved-search-btn star-search-btn';
+        starBtn.innerHTML = '★';
+        starBtn.title = 'Remove from saved searches';
+        starBtn.onclick = () => toggleSavedSearch(item.search);
+        
+        const useBtn = document.createElement('button');
+        useBtn.className = 'saved-search-btn use-search-btn';
+        useBtn.textContent = 'Use';
+        useBtn.onclick = () => useSavedSearch(item.search);
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'saved-search-btn copy-search-btn';
+        copyBtn.textContent = 'Copy';
+        copyBtn.onclick = () => copySavedSearch(item.search);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'saved-search-btn remove-search-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = () => removeSavedSearch(index);
+        
+        actionsDiv.appendChild(starBtn);
+        actionsDiv.appendChild(useBtn);
+        actionsDiv.appendChild(copyBtn);
+        actionsDiv.appendChild(removeBtn);
+        
+        searchDiv.appendChild(searchText);
+        searchDiv.appendChild(actionsDiv);
+        
+        container.appendChild(searchDiv);
+    });
+}
+
+// Use a saved search
+function useSavedSearch(searchString) {
+    document.getElementById('booleanString').value = searchString;
+    document.getElementById('booleanString').focus();
+}
+
+// Copy a saved search to clipboard
+function copySavedSearch(searchString) {
+    const tempTextarea = document.createElement('textarea');
+    tempTextarea.value = searchString;
+    document.body.appendChild(tempTextarea);
+    tempTextarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempTextarea);
+    
+    // Show feedback
+    const copyBtn = event.target;
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = '✅ Copied!';
+    copyBtn.style.backgroundColor = '#27ae60';
+    
+    setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.backgroundColor = '#f39c12';
+    }, 2000);
+}
+
+// Remove a saved search
+async function removeSavedSearch(index) {
+    const confirmed = await customConfirm('Remove Saved Search', 'Are you sure you want to remove this search from saved searches?');
+    if (confirmed) {
+        savedSearches.splice(index, 1);
+        saveData();
+        renderSavedSearches();
+        renderRecentlyUsedSearches(); // Update star icons in recently used
+    }
+}
+
+// Filter saved searches
+function filterSavedSearches() {
+    const filterInput = document.getElementById('savedSearchesFilter');
+    const filterValue = filterInput.value.toLowerCase();
+    
+    const container = document.getElementById('savedSearchesContainer');
+    const searchItems = container.querySelectorAll('.saved-search-item');
+    
+    searchItems.forEach(item => {
+        const searchText = item.querySelector('.saved-search-text').textContent.toLowerCase();
+        if (searchText.includes(filterValue)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Setup saved searches filter
+function setupSavedSearchesFilter() {
+    const filterInput = document.getElementById('savedSearchesFilter');
+    if (filterInput) {
+        filterInput.addEventListener('input', filterSavedSearches);
     }
 }
 
@@ -3665,6 +4023,7 @@ function saveData() {
         categoryData: categoryData,
         trainingContent: trainingContent,
         recentlyUsedSearches: recentlyUsedSearches,
+        savedSearches: savedSearches,
         roles: roles,
         lastSaved: new Date().toISOString()
     };
@@ -3966,6 +4325,7 @@ function loadData() {
             
             trainingContent = data.trainingContent || [];
             recentlyUsedSearches = data.recentlyUsedSearches || [];
+        savedSearches = data.savedSearches || [];
             roles = data.roles || [];
             
             console.log('Data loaded successfully:', categoryData);
@@ -4081,31 +4441,7 @@ function filterRolesByCriteria(roles) {
     });
 }
 
-// Dark Mode Functionality
-function initDarkMode() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateDarkModeButton(savedTheme === 'dark');
-    }
-}
 
-function toggleDarkMode() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateDarkModeButton(newTheme === 'dark');
-}
-
-function updateDarkModeButton(isDark) {
-    const toggleBtn = document.getElementById('darkModeToggle');
-    if (toggleBtn) {
-        toggleBtn.innerHTML = isDark ? '☀️' : '🌙';
-        toggleBtn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
-    }
-}
 
 // Temporary keyword pool functionality
 let tempKeywords = [];
@@ -4263,11 +4599,29 @@ function addTempToBoolean() {
         return;
     }
 
+    // Check which Auto mode is currently active
+    const autoAndBtn = document.getElementById('autoAndBtn');
+    const autoOrBtn = document.getElementById('autoOrBtn');
+    const isAutoAndActive = autoAndBtn && autoAndBtn.classList.contains('active');
+    const isAutoOrActive = autoOrBtn && autoOrBtn.classList.contains('active');
+    
+    // Determine the operator to use for joining keywords
+    let joinOperator = ' AND '; // Default to AND
+    if (isAutoOrActive) {
+        joinOperator = ' OR ';
+        console.log('Auto OR mode detected, using OR to join keywords');
+    } else if (isAutoAndActive) {
+        joinOperator = ' AND ';
+        console.log('Auto AND mode detected, using AND to join keywords');
+    } else {
+        console.log('No Auto mode active, defaulting to AND');
+    }
+
     const currentValue = booleanInput.value;
     console.log('Current boolean input value:', currentValue);
     
-    const keywordsString = tempKeywords.join(' AND ');
-    console.log('Keywords string:', keywordsString);
+    const keywordsString = tempKeywords.join(joinOperator);
+    console.log('Keywords string with operator:', keywordsString);
     
     const newValue = currentValue ? `${currentValue} AND (${keywordsString})` : `(${keywordsString})`;
     console.log('New value:', newValue);
@@ -4293,5 +4647,152 @@ function renderTempKeywords() {
             <button class="remove-temp-keyword-btn" title="Remove">×</button>
         `;
         tempKeywordsList.appendChild(keywordItem);
+    });
+}
+
+// Error threshold modal system
+let errorThresholdModalsShown = {
+    5: false,
+    10: false,
+    15: false,
+    20: false
+};
+
+function showErrorThresholdModal(errorCount) {
+    console.log('showErrorThresholdModal called with errorCount:', errorCount);
+    console.log('Current errorThresholdModalsShown state:', errorThresholdModalsShown);
+    
+    let modalTitle = '';
+    let modalMessage = '';
+    let shouldShow = false;
+    
+    // Determine which threshold was reached
+    if (errorCount >= 20 && !errorThresholdModalsShown[20]) {
+        modalTitle = "Stop. Just Stop.";
+        modalMessage = "You've hit 20+ errors. We've alerted your manager. Your keyboard is under investigation. And frankly, the Boolean string has filed for emotional distress. Please — for everyone's sake — start over.";
+        errorThresholdModalsShown[20] = true;
+        shouldShow = true;
+        console.log('Triggering 20+ error modal');
+    } else if (errorCount >= 15 && !errorThresholdModalsShown[15]) {
+        modalTitle = "This Is Getting Impressive (In the Wrong Way)";
+        modalMessage = "15 errors is no small feat. At this point, it's less a Boolean string and more a cry for help. Take your time. Rome wasn't built in a day, and neither is functional logic, apparently.";
+        errorThresholdModalsShown[15] = true;
+        shouldShow = true;
+        console.log('Triggering 15+ error modal');
+    } else if (errorCount >= 10 && !errorThresholdModalsShown[10]) {
+        modalTitle = "We All Start Somewhere";
+        modalMessage = "10 errors and counting! While ambition is admirable, accuracy is occasionally helpful too. You may want to double-check whether you're actually writing a search or accidentally recreating abstract art.";
+        errorThresholdModalsShown[10] = true;
+        shouldShow = true;
+        console.log('Triggering 10+ error modal');
+    } else if (errorCount >= 5 && !errorThresholdModalsShown[5]) {
+        modalTitle = "Might Be Time for a Quick Breather";
+        modalMessage = "It looks like you've made a few syntax errors. Not catastrophic… yet. Perhaps a coffee break is in order before we continue this Boolean journey?";
+        errorThresholdModalsShown[5] = true;
+        shouldShow = true;
+        console.log('Triggering 5+ error modal');
+    }
+    
+    console.log('shouldShow:', shouldShow);
+    if (shouldShow) {
+        // Create and show the modal
+        console.log('Creating modal with title:', modalTitle);
+        showErrorThresholdModalUI(modalTitle, modalMessage);
+    }
+}
+
+function showErrorThresholdModalUI(title, message) {
+    // Create modal HTML
+    const modalHTML = `
+        <div id="errorThresholdModal" class="modal">
+            <div class="modal-content error-threshold-modal">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <span class="close" onclick="closeErrorThresholdModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p>${message}</p>
+                    <div class="modal-options">
+                        <label>
+                            <input type="checkbox" id="dontShowAgainCheckbox"> Don't show again for this search
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeErrorThresholdModal()" class="ok-btn">OK</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show modal
+    const modal = document.getElementById('errorThresholdModal');
+    modal.style.display = 'block';
+    
+    // Add event listener for Enter key
+    document.addEventListener('keydown', handleErrorThresholdModalKeydown);
+}
+
+function closeErrorThresholdModal() {
+    const modal = document.getElementById('errorThresholdModal');
+    if (modal) {
+        // Check if "Don't show again" is checked
+        const dontShowAgain = document.getElementById('dontShowAgainCheckbox');
+        if (dontShowAgain && dontShowAgain.checked) {
+            // Disable all future modals for this session
+            Object.keys(errorThresholdModalsShown).forEach(key => {
+                errorThresholdModalsShown[key] = true;
+            });
+        }
+        
+        modal.remove();
+        document.removeEventListener('keydown', handleErrorThresholdModalKeydown);
+    }
+}
+
+function handleErrorThresholdModalKeydown(event) {
+    if (event.key === 'Enter' || event.key === 'Escape') {
+        closeErrorThresholdModal();
+    }
+}
+
+// Reset error threshold modals when starting a new search
+function resetErrorThresholdModals() {
+    errorThresholdModalsShown = {
+        5: false,
+        10: false,
+        15: false,
+        20: false
+    };
+}
+
+// Keyboard shortcuts for Auto AND/OR modes
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(event) {
+        // Only handle arrow keys
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            // Prevent default behavior for arrow keys
+            event.preventDefault();
+            
+            const autoAndBtn = document.getElementById('autoAndBtn');
+            const autoOrBtn = document.getElementById('autoOrBtn');
+            
+            if (event.key === 'ArrowUp') {
+                // Up Arrow (↑) - Activate Auto AND
+                if (autoAndBtn) {
+                    autoAndBtn.click();
+                    console.log('Keyboard shortcut: Auto AND activated');
+                }
+            } else if (event.key === 'ArrowDown') {
+                // Down Arrow (↓) - Activate Auto OR
+                if (autoOrBtn) {
+                    autoOrBtn.click();
+                    console.log('Keyboard shortcut: Auto OR activated');
+                }
+            }
+        }
     });
 }

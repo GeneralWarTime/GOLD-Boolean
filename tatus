@@ -11,3 +11,389 @@
 
                            MMOOVVIINNGG
 
+[1mdiff --git a/script.js b/script.js[m
+[1mindex 25a2d5c..463314e 100644[m
+[1m--- a/script.js[m
+[1m+++ b/script.js[m
+[36m@@ -2619,27 +2619,42 @@[m [mfunction insertAtCursor(text) {[m
+         console.log('Current operator:', currentOperator);[m
+         console.log('Operator to insert:', operatorToInsert);[m
+         [m
+[32m+[m[32m        // Function to check if there's a valid keyword or quoted phrase before cursor[m
+[32m+[m[32m        function hasValidKeywordBeforeCursor() {[m
+[32m+[m[32m            const textBeforeCursor = value.substring(0, start).trim();[m
+[32m+[m[32m            if (textBeforeCursor.length === 0) return false;[m
+[32m+[m[41m            [m
+[32m+[m[32m            // Check if the text before cursor ends with a valid keyword or quoted phrase[m
+[32m+[m[32m            // Valid patterns: word, "quoted phrase", or word followed by space[m
+[32m+[m[32m            const validEndings = [[m
+[32m+[m[32m                /[a-zA-Z0-9]+$/,           // Ends with alphanumeric word[m
+[32m+[m[32m                /"[^"]*"$/,                // Ends with quoted phrase[m
+[32m+[m[32m                /[a-zA-Z0-9]+\s+$/         // Ends with word followed by space[m
+[32m+[m[32m            ];[m
+[32m+[m[41m            [m
+[32m+[m[32m            return validEndings.some(pattern => pattern.test(textBeforeCursor));[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+         // Check if the cursor is at the end or if we need to add operator[m
+         const cursorAtEnd = start === value.length;[m
+         const lastChar = value.charAt(start - 1);[m
+[31m-        [m
+[31m-        // We need an operator if:[m
+[31m-        // 1. We're at the end of the textarea AND there's existing content[m
+[31m-        // 2. The last character is not a space, opening parenthesis, or opening quote[m
+[31m-        // 3. OR if we're inserting in the middle and need an operator[m
+[31m-        const needsOperator = (cursorAtEnd && value.trim() !== '') || [m
+[31m-                             (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"');[m
+[32m+[m[32m        const hasValidKeyword = hasValidKeywordBeforeCursor();[m
+         [m
+         console.log('Cursor at end:', cursorAtEnd);[m
+         console.log('Last char:', lastChar);[m
+[31m-        console.log('Needs operator:', needsOperator);[m
+[32m+[m[32m        console.log('Has valid keyword before cursor:', hasValidKeyword);[m
+         [m
+[31m-        if (cursorAtEnd && needsOperator) {[m
+[31m-            textToInsert = operatorToInsert + textToInsert;[m
+[31m-            console.log('Adding operator at end');[m
+[31m-        } else if (!cursorAtEnd && needsOperator) {[m
+[31m-            textToInsert = operatorToInsert + textToInsert;[m
+[31m-            console.log('Adding operator in middle');[m
+[32m+[m[32m        // Only add operator if there's a valid keyword before the cursor[m
+[32m+[m[32m        if (hasValidKeyword) {[m
+[32m+[m[32m            if (cursorAtEnd) {[m
+[32m+[m[32m                textToInsert = operatorToInsert + textToInsert;[m
+[32m+[m[32m                console.log('Adding operator at end');[m
+[32m+[m[32m            } else if (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"') {[m
+[32m+[m[32m                textToInsert = operatorToInsert + textToInsert;[m
+[32m+[m[32m                console.log('Adding operator in middle');[m
+[32m+[m[32m            }[m
+[32m+[m[32m        } else {[m
+[32m+[m[32m            console.log('No valid keyword before cursor - skipping operator');[m
+         }[m
+     }[m
+     [m
+[36m@@ -2716,10 +2731,11 @@[m [mfunction analyzeBooleanSyntax(searchString) {[m
+         isValid: true,[m
+         errors: [],[m
+         warnings: [],[m
+[31m-        suggestions: [][m
+[32m+[m[32m        suggestions: [],[m
+[32m+[m[32m        fixes: [][m
+     };[m
+     [m
+[31m-    // Check for balanced parentheses[m
+[32m+[m[32m    // 1. ✅ Smart Error Detection - Enhanced Parentheses Checking[m
+     const parenthesesStack = [];[m
+     const parenthesesPositions = [];[m
+     [m
+[36m@@ -2734,8 +2750,9 @@[m [mfunction analyzeBooleanSyntax(searchString) {[m
+                 result.errors.push({[m
+                     type: 'unmatched_close',[m
+                     position: i,[m
+[31m-                    message: 'Unmatched closing parenthesis',[m
+[31m-                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis'[m
+[32m+[m[32m                    message: '❌ Unmatched closing parenthesis',[m
+[32m+[m[32m                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis',[m
+[32m+[m
+                 });[m
+                 result.isValid = false;[m
+             } else {[m
+[36m@@ -2751,95 +2768,361 @@[m [mfunction analyzeBooleanSyntax(searchString) {[m
+         result.errors.push({[m
+             type: 'unmatched_open',[m
+             position: unmatched.position,[m
+[31m-            message: 'Unmatched opening parenthesis',[m
+[31m-            suggestion: 'Add a closing parenthesis or remove this opening parenthesis'[m
+[32m+[m[32m            message: '❌ Unmatched opening parenthesis',[m
+[32m+[m[32m            suggestion: 'Add a closing parenthesis or remove this opening parenthesis',[m
+[32m+[m[41m            [m
+         });[m
+         result.isValid = false;[m
+     }[m
+     [m
+[31m-    // Check for consecutive operators[m
+[32m+[m[32m    // 2. ✅ Dangling Operators Detection[m
+     const operatorPattern = /\s+(AND|OR|NOT)\s+/gi;[m
+     let match;[m
+     let lastOperatorEnd = -1;[m
+     [m
+     while ((match = operatorPattern.exec(searchString)) !== null) {[m
+[32m+[m[32m        const operatorStart = match.index;[m
+[32m+[m[32m        const operatorEnd = match.index + match[0].length;[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Check for consecutive operators[m
+         if (lastOperatorEnd !== -1 && match.index === lastOperatorEnd) {[m
+             result.errors.push({[m
+                 type: 'consecutive_operators',[m
+                 position: match.index,[m
+[31m-                message: 'Consecutive boolean operators',[m
+[31m-                suggestion: 'Remove one of the consecutive operators'[m
+[32m+[m[32m                message: '❌ Consecutive boolean operators',[m
+[32m+[m[32m                suggestion: 'Remove one of the consecutive operators',[m
+[32m+[m
+[32m+[m[32m            });[m
+[32m+[m[32m            result.isValid = false;[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Check for dangling operators (no valid keyword before or after)[m
+[32m+[m[32m        const beforeOperator = searchString.substring(0, operatorStart).trim();[m
+[32m+[m[32m        const afterOperator = searchString.substring(operatorEnd).trim();[m
+[32m+[m[41m        [m
+[32m+[m[32m        const hasValidBefore = /[a-zA-Z0-9]+$|"[^"]*"$/.test(beforeOperator);[m
+[32m+[m[32m        const hasValidAfter = /^[a-zA-Z0-9]+|^"[^"]*"/.test(afterOperator);[m
+[32m+[m[41m        [m
+[32m+[m[32m        if (!hasValidBefore) {[m
+[32m+[m[32m            result.errors.push({[m
+[32m+[m[32m                type: 'dangling_operator_start',[m
+[32m+[m[32m                position: operatorStart,[m
+[32m+[m[32m                message: '❌ Dangling operator - no valid keyword before',[m
+[32m+[m[32m                suggestion: 'Remove the operator or add a keyword before it'[m
+[32m+[m[32m            });[m
+[32m+[m[32m            result.isValid = false;[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        if (!hasValidAfter && afterOperator.length > 0) {[m
+[32m+[m[32m            result.errors.push({[m
+[32m+[m[32m                type: 'dangling_operator_end',[m
+[32m+[m[32m                position: operatorEnd,[m
+[32m+[m[32m                message: '❌ Dangling operator - no valid keyword after',[m
+[32m+[m[32m                suggestion: 'Remove the operator or add a keyword after it'[m
+             });[m
+             result.isValid = false;[m
+         }[m
+[31m-        lastOperatorEnd = match.index + match[0].length;[m
+[32m+[m[41m        [m
+[32m+[m[32m        lastOperatorEnd = operatorEnd;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 3. ✅ Empty Groups Detection[m
+[32m+[m[32m    const emptyParentheses = searchString.match(/\(\s*\)/g);[m
+[32m+[m[32m    if (emptyParentheses) {[m
+[32m+[m[32m        result.errors.push({[m
+[32m+[m[32m            type: 'empty_parentheses',[m
+[32m+[m[32m            message: '❌ Empty parentheses found',[m
+[32m+[m[32m            suggestion: 'Remove empty parentheses or add content inside them'[m
+[32m+[m[32m        });[m
+[32m+[m[32m        result.isValid = false;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 4. ✅ Empty Quotation Marks Detection[m
+[32m+[m[32m    const emptyQuotes = searchString.match(/""/g);[m
+[32m+[m[32m    if (emptyQuotes) {[m
+[32m+[m[32m        result.errors.push({[m
+[32m+[m[32m            type: 'empty_quotes',[m
+[32m+[m[32m            message: '❌ Empty quotation marks found',[m
+[32m+[m[32m            suggestion: 'Remove empty quotes or add content inside them'[m
+[32m+[m[32m        });[m
+[32m+[m[32m        result.isValid = false;[m
+     }[m
+     [m
+[31m-    // Check for operators at the beginning or end[m
+[32m+[m[32m    // 5. ✅ Unquoted Multi-Word Phrases Detection (Fixed)[m
+[32m+[m[32m    // Only flag actual multi-word phrases, not keyword OR keyword patterns[m
+[32m+[m[32m    const unquotedPhrases = searchString.match(/\b[A-Za-z]+\s+[A-Za-z]+(?=\s+(?:AND|OR|NOT)|$)/g);[m
+[32m+[m[32m    if (unquotedPhrases) {[m
+[32m+[m[32m        unquotedPhrases.forEach(phrase => {[m
+[32m+[m[32m            // Skip if the phrase contains a boolean operator[m
+[32m+[m[32m            if (/\b(AND|OR|NOT)\b/i.test(phrase)) {[m
+[32m+[m[32m                return;[m
+[32m+[m[32m            }[m
+[32m+[m[41m            [m
+[32m+[m[32m            // Skip if it's a valid keyword OR keyword pattern[m
+[32m+[m[32m            const words = phrase.split(/\s+/);[m
+[32m+[m[32m            if (words.length === 2 && /^(AND|OR|NOT)$/i.test(words[1])) {[m
+[32m+[m[32m                return;[m
+[32m+[m[32m            }[m
+[32m+[m[41m            [m
+[32m+[m[32m            result.warnings.push({[m
+[32m+[m[32m                type: 'unquoted_phrase',[m
+[32m+[m[32m                message: `⚠️ Unquoted multi-word phrase: "${phrase}"`,[m
+[32m+[m[32m                suggestion: 'Consider wrapping in quotes for exact matching'[m
+[32m+[m[32m            });[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 6. ✅ Enhanced Quote Validation[m
+[32m+[m[32m    const quoteCount = (searchString.match(/"/g) || []).length;[m
+[32m+[m[32m    if (quoteCount % 2 !== 0) {[m
+[32m+[m[32m        result.errors.push({[m
+[32m+[m[32m            type: 'unmatched_quotes',[m
+[32m+[m[32m            message: '❌ Unmatched quotes found',[m
+[32m+[m[32m            suggestion: 'Check for missing opening or closing quotes'[m
+[32m+[m[32m        });[m
+[32m+[m[32m        result.isValid = false;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 7. ✅ Operators at Start/End Detection[m
+     const trimmedString = searchString.trim();[m
+     if (trimmedString.match(/^(AND|OR|NOT)\s+/i)) {[m
+         result.errors.push({[m
+             type: 'operator_at_start',[m
+             position: 0,[m
+[31m-            message: 'Boolean operator at the beginning of search',[m
+[32m+[m[32m            message: '❌ Boolean operator at the beginning of search',[m
+             suggestion: 'Remove the operator or add a keyword before it'[m
+         });[m
+         result.isValid = false;[m
+     }[m
+     [m
+     if (trimmedString.match(/\s+(AND|OR|NOT)$/i)) {[m
+[32m+[m[32m        const match = trimmedString.match(/\s+(AND|OR|NOT)$/i);[m
+         result.errors.push({[m
+             type: 'operator_at_end',[m
+[31m-            position: searchString.length - 1,[m
+[31m-            message: 'Boolean operator at the end of search',[m
+[31m-            suggestion: 'Remove the operator or add a keyword after it'[m
+[31m-        });[m
+[31m-        result.isValid = false;[m
+[31m-    }[m
+[31m-    [m
+[32m+[m[32m            position: searchString.length - match[0].length,[m
+[32m+[m[32m            message: '❌ Boolean operator at the end of search',[m
+[32m+[m[32m            suggestion: 'Remove the operator or add a keyword after it',[m
+ [m
+[31m-    [m
+[31m-    // Check for empty parentheses[m
+[31m-    const emptyParentheses = searchString.match(/\(\s*\)/g);[m
+[31m-    if (emptyParentheses) {[m
+[31m-        result.errors.push({[m
+[31m-            type: 'empty_parentheses',[m
+[31m-            message: 'Empty parentheses found',[m
+[31m-            suggestion: 'Remove empty parentheses or add content inside them'[m
+         });[m
+         result.isValid = false;[m
+     }[m
+     [m
+[31m-    // Check for missing spaces around operators[m
+[32m+[m[32m    // 8. ✅ Missing Spaces Warning[m
+     const missingSpaces = searchString.match(/\w+(AND|OR|NOT)\w+|\w+(AND|OR|NOT)\s+|\s+(AND|OR|NOT)\w+/gi);[m
+     if (missingSpaces) {[m
+         result.warnings.push({[m
+             type: 'missing_spaces',[m
+[31m-            message: 'Missing spaces around boolean operators',[m
+[31m-            suggestion: 'Add spaces around operators for better readability'[m
+[31m-        });[m
+[31m-    }[m
+[31m-    [m
+[31m-    // Check for double quotes issues[m
+[31m-    const quoteCount = (searchString.match(/"/g) || []).length;[m
+[31m-    if (quoteCount % 2 !== 0) {[m
+[31m-        result.errors.push({[m
+[31m-            type: 'unmatched_quotes',[m
+[31m-            message: 'Unmatched quotes found',[m
+[31m-            suggestion: 'Check for missing opening or closing quotes'[m
+[32m+[m[32m            message: '⚠️ Missing spaces around boolean operators',[m
+[32m+[m[32m            suggestion: 'Add spaces around operators for better readability',[m
+[32m+[m
+         });[m
+[31m-        result.isValid = false;[m
+     }[m
+     [m
+[31m-    // Check for very long search strings[m
+[32m+[m[32m    // 9. ✅ Long Search Warning[m
+     if (searchString.length > 1000) {[m
+         result.warnings.push({[m
+             type: 'long_search',[m
+[31m-            message: 'Search string is very long',[m
+[32m+[m[32m            message: '⚠️ Search string is very long',[m
+             suggestion: 'Consider breaking this into multiple searches'[m
+         });[m
+     }[m
+     [m
+[32m+[m[32m    // 10. ✅ Whitespace in Quoted Phrases Warning[m
+[32m+[m[32m    const quotedPhrases = searchString.match(/"[^"]*"/g);[m
+[32m+[m[32m    if (quotedPhrases) {[m
+[32m+[m[32m        quotedPhrases.forEach(phrase => {[m
+[32m+[m[32m            const content = phrase.slice(1, -1); // Remove quotes[m
+[32m+[m[32m            if (content.startsWith(' ') || content.endsWith(' ')) {[m
+[32m+[m[32m                result.warnings.push({[m
+[32m+[m[32m                    type: 'whitespace_in_quotes',[m
+[32m+[m[32m                    message: `⚠️ Unnecessary whitespace in quoted phrase: ${phrase}`,[m
+[32m+[m[32m                    suggestion: 'This phrase has unnecessary whitespace inside the quotes — it may return no results.',[m
+[32m+[m
+[32m+[m[32m                });[m
+[32m+[m[32m            }[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 11. ✅ Lowercase Boolean Operators Warning (Fixed)[m
+[32m+[m[32m    // Only flag actual lowercase operators, not uppercase ones[m
+[32m+[m[32m    const lowercaseOperators = searchString.match(/\s+(and|or|not)\s+/gi);[m
+[32m+[m[32m    if (lowercaseOperators) {[m
+[32m+[m[32m        lowercaseOperators.forEach(operator => {[m
+[32m+[m[32m            const trimmedOperator = operator.trim();[m
+[32m+[m[32m            // Only flag if it's actually lowercase (not mixed case)[m
+[32m+[m[32m            if (trimmedOperator === trimmedOperator.toLowerCase()) {[m
+[32m+[m[32m                const upperOperator = trimmedOperator.toUpperCase();[m
+[32m+[m[32m                result.warnings.push({[m
+[32m+[m[32m                    type: 'lowercase_operators',[m
+[32m+[m[32m                    message: `⚠️ Lowercase boolean operator: "${trimmedOperator}"`,[m
+[32m+[m[32m                    suggestion: 'Convert to uppercase for consistency',[m
+[32m+[m
+[32m+[m[32m                });[m
+[32m+[m[32m            }[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 12. ✅ Enhanced Empty Groups Detection (including cases like (AND "Java"))[m
+[32m+[m[32m    const emptyGroups = searchString.match(/\(\s*(AND|OR|NOT)\s+[^)]*\)/g);[m
+[32m+[m[32m    if (emptyGroups) {[m
+[32m+[m[32m        emptyGroups.forEach(group => {[m
+[32m+[m[32m            result.errors.push({[m
+[32m+[m[32m                type: 'invalid_empty_group',[m
+[32m+[m[32m                message: `❌ Invalid group structure: ${group}`,[m
+[32m+[m[32m                suggestion: 'Remove the group or fix the structure',[m
+[32m+[m
+[32m+[m[32m            });[m
+[32m+[m[32m            result.isValid = false;[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 13. ✅ Enhanced Consecutive Operators Detection[m
+[32m+[m[32m    const consecutiveOperators = searchString.match(/\s+(AND|OR|NOT)\s+(AND|OR|NOT)\s+/gi);[m
+[32m+[m[32m    if (consecutiveOperators) {[m
+[32m+[m[32m        consecutiveOperators.forEach(match => {[m
+[32m+[m[32m            result.errors.push({[m
+[32m+[m[32m                type: 'consecutive_operators_enhanced',[m
+[32m+[m[32m                message: `❌ Consecutive operators: ${match.trim()}`,[m
+[32m+[m[32m                suggestion: 'Remove one of the consecutive operators',[m
+[32m+[m
+[32m+[m[32m            });[m
+[32m+[m[32m            result.isValid = false;[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m
+[32m+[m[41m    [m
+[32m+[m[32m    // 15. ✅ Proper Quote Separation Detection (Completely Rewritten)[m
+[32m+[m[32m    // Use proper tokenization to avoid false positives on valid expressions[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Helper function to properly tokenize Boolean expressions[m
+[32m+[m[32m    function tokenizeBooleanExpression(str) {[m
+[32m+[m[32m        const tokens = [];[m
+[32m+[m[32m        let current = '';[m
+[32m+[m[32m        let inQuotes = false;[m
+[32m+[m[32m        let i = 0;[m
+[32m+[m[41m        [m
+[32m+[m[32m        while (i < str.length) {[m
+[32m+[m[32m            const char = str[i];[m
+[32m+[m[41m            [m
+[32m+[m[32m            if (char === '"') {[m
+[32m+[m[32m                if (inQuotes) {[m
+[32m+[m[32m                    // End of quoted phrase[m
+[32m+[m[32m                    current += char;[m
+[32m+[m[32m                    tokens.push({ type: 'quoted', value: current, start: i - current.length + 1, end: i });[m
+[32m+[m[32m                    current = '';[m
+[32m+[m[32m                    inQuotes = false;[m
+[32m+[m[32m                } else {[m
+[32m+[m[32m                    // Start of quoted phrase[m
+[32m+[m[32m                    if (current.trim()) {[m
+[32m+[m[32m                        tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });[m
+[32m+[m[32m                        current = '';[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                    current = char;[m
+[32m+[m[32m                    inQuotes = true;[m
+[32m+[m[32m                }[m
+[32m+[m[32m            } else if (inQuotes) {[m
+[32m+[m[32m                current += char;[m
+[32m+[m[32m            } else if (/\s/.test(char)) {[m
