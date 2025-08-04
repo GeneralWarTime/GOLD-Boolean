@@ -4,6 +4,33 @@ let categories = {
     secondary: ['Context', 'Certifications & Clearances']
 };
 
+// Saved searches storage
+let savedSearches = [];
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyA0Sw8STec1LHuFN9_fxN7ni506TrD51hs",
+  authDomain: "boolean-gold.firebaseapp.com",
+  projectId: "boolean-gold",
+  storageBucket: "boolean-gold.firebasestorage.app",
+  messagingSenderId: "137254251529",
+  appId: "1:137254251529:web:ced755c0e98a7bb05a5cd8",
+  measurementId: "G-XR8356J2YE"
+};
+
+// Initialize Firebase
+console.log('Initializing Firebase...');
+firebase.initializeApp(firebaseConfig);
+console.log('Firebase initialized successfully');
+const analytics = firebase.analytics();
+const auth = firebase.auth();
+const db = firebase.firestore();
+console.log('Firebase services initialized');
+
+// Auth state management
+let currentUser = null;
+let isAuthenticated = false;
+
 let categoryData = {
     'Titles': {
         'Technical': {},
@@ -125,38 +152,31 @@ let currentContextSubcategory = null;
 // Modal management for Certifications & Clearances boolean searches
 let currentCertificationsSubcategory = null;
 
-// DOM elements
-const navButtons = document.querySelectorAll('.nav-btn');
-const sections = document.querySelectorAll('.section');
+// DOM elements - will be initialized after DOM loads
+let navButtons;
+let sections;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    loadData();
-    setupNavigation();
-    setupStorageSection();
-            setupBuilderSection();
-        setupTrainerSection();
-        renderAll();
-    updateDataStatus();
-    loadInteractionMode();
-    initDarkMode();
-    setupTempKeywordPool();
-    
-    // Setup dark mode toggle
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', toggleDarkMode);
-    }
-    
-    // Update data status every minute
-    setInterval(updateDataStatus, 60000);
+    console.log('=== GOLD BOOLEAN AUTH SYSTEM v15 ===');
+    console.log('DOM loaded, authentication system ready...');
 });
 
 // Navigation functionality
 function setupNavigation() {
+    console.log('Setting up navigation...');
+    
+    // Initialize DOM elements
+    navButtons = document.querySelectorAll('.nav-btn');
+    sections = document.querySelectorAll('.section');
+    
+    console.log('navButtons found:', navButtons.length);
+    console.log('sections found:', sections.length);
+    
     navButtons.forEach(button => {
         button.addEventListener('click', () => {
             const targetSection = button.getAttribute('data-section');
+            console.log('Navigation clicked:', targetSection);
             
             // Update active button
             navButtons.forEach(btn => btn.classList.remove('active'));
@@ -167,10 +187,12 @@ function setupNavigation() {
                 section.classList.remove('active');
                 if (section.id === targetSection) {
                     section.classList.add('active');
+                    console.log('Activated section:', targetSection);
                 }
             });
         });
     });
+    console.log('Navigation setup complete');
 }
 
 // Storage Section
@@ -1521,6 +1543,8 @@ function filterItems(category) {
 
 // Boolean Builder Section
 function setupBuilderSection() {
+    console.log('Setting up Builder section...');
+    
     // Setup role dashboard
     const addRoleBtn = document.getElementById('addNewRoleBtn');
     const backBtn = document.getElementById('backToDashboardBtn');
@@ -1528,11 +1552,11 @@ function setupBuilderSection() {
     const filterRolesBtn = document.getElementById('filterRolesBtn');
     const demoModeBtn = document.getElementById('demoModeBtn');
     
-    addRoleBtn.addEventListener('click', addNewRole);
-    backBtn.addEventListener('click', backToDashboard);
-    roleSearchInput.addEventListener('input', filterRoles);
-    filterRolesBtn.addEventListener('click', openRoleFilterModal);
-    demoModeBtn.addEventListener('click', enterDemoMode);
+    if (addRoleBtn) addRoleBtn.addEventListener('click', addNewRole);
+    if (backBtn) backBtn.addEventListener('click', backToDashboard);
+    if (roleSearchInput) roleSearchInput.addEventListener('input', filterRoles);
+    if (filterRolesBtn) filterRolesBtn.addEventListener('click', openRoleFilterModal);
+    if (demoModeBtn) demoModeBtn.addEventListener('click', enterDemoMode);
     
     // Setup operator buttons
     const operatorButtons = document.querySelectorAll('.boolean-operator-btn');
@@ -2330,7 +2354,8 @@ function saveSelectedKeywords() {
     
     // Load role-specific data
     document.getElementById('booleanString').value = currentRole.booleanString || '';
-    recentlyUsedSearches = currentRole.recentlyUsedSearches || [];
+            recentlyUsedSearches = currentRole.recentlyUsedSearches || [];
+        savedSearches = currentRole.savedSearches || [];
     
     // Render role-specific content
     renderKeywordsFromDirectory();
@@ -2495,6 +2520,7 @@ function openRole(roleId) {
         // Load role-specific data
         document.getElementById('booleanString').value = role.booleanString || '';
         recentlyUsedSearches = role.recentlyUsedSearches || [];
+        savedSearches = role.savedSearches || [];
         
         // Render role-specific content
         renderKeywordsFromDirectory();
@@ -2508,6 +2534,7 @@ function backToDashboard() {
     if (currentRole) {
         currentRole.booleanString = document.getElementById('booleanString').value;
         currentRole.recentlyUsedSearches = recentlyUsedSearches;
+        currentRole.savedSearches = savedSearches;
         currentRole.lastModified = new Date().toISOString();
         saveData();
     }
@@ -2577,6 +2604,7 @@ function enterDemoMode() {
         
         // Render recently used searches
         renderRecentlyUsedSearches();
+        renderSavedSearches();
     }
 }
 
@@ -2619,27 +2647,42 @@ function insertAtCursor(text) {
         console.log('Current operator:', currentOperator);
         console.log('Operator to insert:', operatorToInsert);
         
+        // Function to check if there's a valid keyword or quoted phrase before cursor
+        function hasValidKeywordBeforeCursor() {
+            const textBeforeCursor = value.substring(0, start).trim();
+            if (textBeforeCursor.length === 0) return false;
+            
+            // Check if the text before cursor ends with a valid keyword or quoted phrase
+            // Valid patterns: word, "quoted phrase", or word followed by space
+            const validEndings = [
+                /[a-zA-Z0-9]+$/,           // Ends with alphanumeric word
+                /"[^"]*"$/,                // Ends with quoted phrase
+                /[a-zA-Z0-9]+\s+$/         // Ends with word followed by space
+            ];
+            
+            return validEndings.some(pattern => pattern.test(textBeforeCursor));
+        }
+        
         // Check if the cursor is at the end or if we need to add operator
         const cursorAtEnd = start === value.length;
         const lastChar = value.charAt(start - 1);
-        
-        // We need an operator if:
-        // 1. We're at the end of the textarea AND there's existing content
-        // 2. The last character is not a space, opening parenthesis, or opening quote
-        // 3. OR if we're inserting in the middle and need an operator
-        const needsOperator = (cursorAtEnd && value.trim() !== '') || 
-                             (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"');
+        const hasValidKeyword = hasValidKeywordBeforeCursor();
         
         console.log('Cursor at end:', cursorAtEnd);
         console.log('Last char:', lastChar);
-        console.log('Needs operator:', needsOperator);
+        console.log('Has valid keyword before cursor:', hasValidKeyword);
         
-        if (cursorAtEnd && needsOperator) {
-            textToInsert = operatorToInsert + textToInsert;
-            console.log('Adding operator at end');
-        } else if (!cursorAtEnd && needsOperator) {
-            textToInsert = operatorToInsert + textToInsert;
-            console.log('Adding operator in middle');
+        // Only add operator if there's a valid keyword before the cursor
+        if (hasValidKeyword) {
+            if (cursorAtEnd) {
+                textToInsert = operatorToInsert + textToInsert;
+                console.log('Adding operator at end');
+            } else if (lastChar !== ' ' && lastChar !== '(' && lastChar !== '"') {
+                textToInsert = operatorToInsert + textToInsert;
+                console.log('Adding operator in middle');
+            }
+        } else {
+            console.log('No valid keyword before cursor - skipping operator');
         }
     }
     
@@ -2705,10 +2748,145 @@ function validateBooleanSyntax() {
     const searchString = textarea.value;
     const validationResult = analyzeBooleanSyntax(searchString);
     
+    const originalErrorCount = validationResult.errors.length;
+    console.log('Before deduplication:', originalErrorCount, 'errors');
+    
+    // Deduplicate errors before displaying
+    validationResult.errors = deduplicateErrors(validationResult.errors);
+    validationResult.warnings = deduplicateErrors(validationResult.warnings);
+    
+    console.log('After deduplication:', validationResult.errors.length, 'errors');
+    
+    // Check for error threshold modals using original count (including duplicates)
+    console.log('Checking error threshold modals. Original error count:', originalErrorCount);
+    if (originalErrorCount > 0) {
+        console.log('Calling showErrorThresholdModal with original error count:', originalErrorCount);
+        showErrorThresholdModal(originalErrorCount);
+    }
+    
     // Update validation display
     updateSyntaxValidationDisplay(validationResult);
     
     return validationResult.isValid;
+}
+
+// Function to deduplicate errors and warnings by grouping identical messages
+function deduplicateErrors(errors) {
+    console.log('Deduplicating errors:', errors.length, 'errors');
+    const errorGroups = {};
+    
+    errors.forEach(error => {
+        // Create a unique key based on error type and a normalized message
+        // For dynamic messages, we'll group by type and base message pattern
+        let normalizedMessage = error.message;
+        
+        // Handle dynamic content in error messages
+        if (error.type === 'unmatched_open') {
+            // Group all unmatched opening parenthesis errors together
+            normalizedMessage = `❌ Unmatched opening parenthesis`;
+        } else if (error.type === 'unmatched_close') {
+            // Group all unmatched closing parenthesis errors together
+            normalizedMessage = `❌ Unmatched closing parenthesis`;
+        } else if (error.type === 'operator_in_quotes') {
+            // Extract the operator name for grouping
+            const operatorMatch = error.message.match(/Boolean operator "([^"]+)" found inside quotes/);
+            if (operatorMatch) {
+                normalizedMessage = `⚠️ Boolean operator "OPERATOR" found inside quotes: QUOTED_PHRASE`;
+            }
+        } else if (error.type === 'unquoted_phrase') {
+            // Group all unquoted phrase warnings together
+            normalizedMessage = `⚠️ Unquoted multi-word phrase: "PHRASE"`;
+        } else if (error.type === 'whitespace_in_quotes') {
+            // Group all whitespace in quotes warnings together
+            normalizedMessage = `⚠️ Unnecessary whitespace in quoted phrase: QUOTED_PHRASE`;
+        } else if (error.type === 'lowercase_operators') {
+            // Group all lowercase operator warnings together
+            normalizedMessage = `⚠️ Lowercase boolean operator: "OPERATOR"`;
+        } else if (error.type === 'consecutive_operators_enhanced') {
+            // Group consecutive operators by the pattern
+            normalizedMessage = `❌ Consecutive operators: OPERATOR_PATTERN`;
+        } else if (error.type === 'improper_quote_separation') {
+            // Group quote separation errors
+            normalizedMessage = `❌ Quoted phrase not separated from unquoted keyword: PHRASE_PATTERN`;
+        } else if (error.type === 'consecutive_quotes') {
+            // Group consecutive quotes errors
+            normalizedMessage = `❌ Consecutive quoted phrases without separator: QUOTE_PATTERN`;
+        } else if (error.type === 'invalid_empty_group') {
+            // Group invalid empty group errors
+            normalizedMessage = `❌ Invalid group structure: GROUP_PATTERN`;
+        } else if (error.type === 'empty_parentheses') {
+            // Group empty parentheses errors
+            normalizedMessage = `❌ Empty parentheses found`;
+        } else if (error.type === 'empty_quotes') {
+            // Group empty quotes errors
+            normalizedMessage = `❌ Empty quotation marks found`;
+        } else if (error.type === 'unmatched_quotes') {
+            // Group unmatched quotes errors
+            normalizedMessage = `❌ Unmatched quotes found`;
+        } else if (error.type === 'operator_at_start') {
+            // Group operator at start errors
+            normalizedMessage = `❌ Boolean operator at the beginning of search`;
+        } else if (error.type === 'operator_at_end') {
+            // Group operator at end errors
+            normalizedMessage = `❌ Boolean operator at the end of search`;
+        } else if (error.type === 'dangling_operator_start') {
+            // Group dangling operator start errors
+            normalizedMessage = `❌ Dangling operator - no valid keyword before`;
+        } else if (error.type === 'dangling_operator_end') {
+            // Group dangling operator end errors
+            normalizedMessage = `❌ Dangling operator - no valid keyword after`;
+        } else if (error.type === 'consecutive_operators') {
+            // Group consecutive operators errors
+            normalizedMessage = `❌ Consecutive boolean operators`;
+        } else if (error.type === 'missing_spaces') {
+            // Group missing spaces warnings
+            normalizedMessage = `⚠️ Missing spaces around boolean operators`;
+        } else if (error.type === 'long_search') {
+            // Group long search warnings
+            normalizedMessage = `⚠️ Search string is very long`;
+        }
+        
+        const key = `${error.type}:${normalizedMessage}`;
+        
+        if (!errorGroups[key]) {
+            errorGroups[key] = {
+                ...error,
+                count: 1,
+                positions: error.position !== undefined ? [error.position] : []
+            };
+        } else {
+            errorGroups[key].count++;
+            if (error.position !== undefined) {
+                errorGroups[key].positions.push(error.position);
+            }
+        }
+    });
+    
+    // Convert grouped errors back to array with count display
+    const result = Object.values(errorGroups).map(groupedError => {
+        const deduplicatedError = { ...groupedError };
+        
+        // Update message to include count if more than 1
+        if (groupedError.count > 1) {
+            // Remove the count from the message if it already has one
+            const baseMessage = groupedError.message.replace(/\s*\(x\d+\)$/, '');
+            deduplicatedError.message = `${baseMessage} (x${groupedError.count})`;
+        }
+        
+        // Keep the first position for highlighting (most relevant)
+        if (deduplicatedError.positions && deduplicatedError.positions.length > 0) {
+            deduplicatedError.position = deduplicatedError.positions[0];
+        }
+        
+        // Remove the count and positions properties to maintain original structure
+        delete deduplicatedError.count;
+        delete deduplicatedError.positions;
+        
+        return deduplicatedError;
+    });
+    
+    console.log('Deduplication result:', result.length, 'errors after deduplication');
+    return result;
 }
 
 function analyzeBooleanSyntax(searchString) {
@@ -2716,10 +2894,11 @@ function analyzeBooleanSyntax(searchString) {
         isValid: true,
         errors: [],
         warnings: [],
-        suggestions: []
+        suggestions: [],
+        fixes: []
     };
     
-    // Check for balanced parentheses
+    // 1. ✅ Smart Error Detection - Enhanced Parentheses Checking
     const parenthesesStack = [];
     const parenthesesPositions = [];
     
@@ -2734,8 +2913,9 @@ function analyzeBooleanSyntax(searchString) {
                 result.errors.push({
                     type: 'unmatched_close',
                     position: i,
-                    message: 'Unmatched closing parenthesis',
-                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis'
+                    message: '❌ Unmatched closing parenthesis',
+                    suggestion: 'Remove this closing parenthesis or add an opening parenthesis',
+
                 });
                 result.isValid = false;
             } else {
@@ -2751,93 +2931,428 @@ function analyzeBooleanSyntax(searchString) {
         result.errors.push({
             type: 'unmatched_open',
             position: unmatched.position,
-            message: 'Unmatched opening parenthesis',
-            suggestion: 'Add a closing parenthesis or remove this opening parenthesis'
+            message: '❌ Unmatched opening parenthesis',
+            suggestion: 'Add a closing parenthesis or remove this opening parenthesis',
+            
         });
         result.isValid = false;
     }
     
-    // Check for consecutive operators
+    // 2. ✅ Enhanced Dangling Operators Detection
     const operatorPattern = /\s+(AND|OR|NOT)\s+/gi;
     let match;
     let lastOperatorEnd = -1;
     
     while ((match = operatorPattern.exec(searchString)) !== null) {
+        const operatorStart = match.index;
+        const operatorEnd = match.index + match[0].length;
+        
+        // Check for consecutive operators
         if (lastOperatorEnd !== -1 && match.index === lastOperatorEnd) {
             result.errors.push({
                 type: 'consecutive_operators',
                 position: match.index,
-                message: 'Consecutive boolean operators',
-                suggestion: 'Remove one of the consecutive operators'
+                message: '❌ Consecutive boolean operators',
+                suggestion: 'Remove one of the consecutive operators',
             });
             result.isValid = false;
         }
-        lastOperatorEnd = match.index + match[0].length;
+        
+        // Enhanced check for dangling operators
+        const beforeOperator = searchString.substring(0, operatorStart).trim();
+        const afterOperator = searchString.substring(operatorEnd).trim();
+        
+        // Check if there's valid content before the operator
+        const hasValidBefore = checkValidContentBefore(beforeOperator);
+        const hasValidAfter = checkValidContentAfter(afterOperator);
+        
+        if (!hasValidBefore) {
+            result.errors.push({
+                type: 'dangling_operator_start',
+                position: operatorStart,
+                message: '❌ Dangling operator - no valid keyword before',
+                suggestion: 'Remove the operator or add a keyword before it'
+            });
+            result.isValid = false;
+        }
+        
+        if (!hasValidAfter && afterOperator.length > 0) {
+            result.errors.push({
+                type: 'dangling_operator_end',
+                position: operatorEnd,
+                message: '❌ Dangling operator - no valid keyword after',
+                suggestion: 'Remove the operator or add a keyword after it'
+            });
+            result.isValid = false;
+        }
+        
+        lastOperatorEnd = operatorEnd;
     }
     
-    // Check for operators at the beginning or end
+    // Helper functions for enhanced operator validation
+    function checkValidContentBefore(text) {
+        if (!text) return false;
+        
+        // Check for quoted terms at the end
+        if (/"$/.test(text)) {
+            return true;
+        }
+        
+        // Check for alphanumeric terms at the end
+        if (/[a-zA-Z0-9]+$/.test(text)) {
+            return true;
+        }
+        
+        // Check for closing parenthesis at the end (valid expression)
+        if (/\)$/.test(text)) {
+            return true;
+        }
+        
+        // Check for valid expression ending with closing parenthesis
+        // This handles cases like ("GOLD" OR "Boolean")
+        const trimmed = text.trim();
+        if (trimmed.endsWith(')')) {
+            // Count parentheses to ensure it's a balanced expression
+            let openCount = 0;
+            let closeCount = 0;
+            for (let i = 0; i < trimmed.length; i++) {
+                if (trimmed[i] === '(') openCount++;
+                if (trimmed[i] === ')') closeCount++;
+            }
+            // If we have more closing than opening, it's a valid expression
+            if (closeCount > openCount) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    function checkValidContentAfter(text) {
+        if (!text) return false;
+        
+        // Check for quoted terms at the start
+        if (/^"/.test(text)) {
+            return true;
+        }
+        
+        // Check for alphanumeric terms at the start
+        if (/^[a-zA-Z0-9]+/.test(text)) {
+            return true;
+        }
+        
+        // Check for opening parenthesis at the start (valid expression)
+        if (/^\(/.test(text)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // 3. ✅ Empty Groups Detection
+    const emptyParentheses = searchString.match(/\(\s*\)/g);
+    if (emptyParentheses) {
+        result.errors.push({
+            type: 'empty_parentheses',
+            message: '❌ Empty parentheses found',
+            suggestion: 'Remove empty parentheses or add content inside them'
+        });
+        result.isValid = false;
+    }
+    
+    // 4. ✅ Empty Quotation Marks Detection
+    const emptyQuotes = searchString.match(/""/g);
+    if (emptyQuotes) {
+        result.errors.push({
+            type: 'empty_quotes',
+            message: '❌ Empty quotation marks found',
+            suggestion: 'Remove empty quotes or add content inside them'
+        });
+        result.isValid = false;
+    }
+    
+    // 5. ✅ Unquoted Multi-Word Phrases Detection (Fixed)
+    // Only flag actual multi-word phrases, not keyword OR keyword patterns
+    const unquotedPhrases = searchString.match(/\b[A-Za-z]+\s+[A-Za-z]+(?=\s+(?:AND|OR|NOT)|$)/g);
+    if (unquotedPhrases) {
+        unquotedPhrases.forEach(phrase => {
+            // Skip if the phrase contains a boolean operator
+            if (/\b(AND|OR|NOT)\b/i.test(phrase)) {
+                return;
+            }
+            
+            // Skip if it's a valid keyword OR keyword pattern
+            const words = phrase.split(/\s+/);
+            if (words.length === 2 && /^(AND|OR|NOT)$/i.test(words[1])) {
+                return;
+            }
+            
+            result.warnings.push({
+                type: 'unquoted_phrase',
+                message: `⚠️ Unquoted multi-word phrase: "${phrase}"`,
+                suggestion: 'Consider wrapping in quotes for exact matching'
+            });
+        });
+    }
+    
+    // 6. ✅ Enhanced Quote Validation
+    const quoteCount = (searchString.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+        result.errors.push({
+            type: 'unmatched_quotes',
+            message: '❌ Unmatched quotes found',
+            suggestion: 'Check for missing opening or closing quotes'
+        });
+        result.isValid = false;
+    }
+    
+    // 7. ✅ Operators at Start/End Detection
     const trimmedString = searchString.trim();
     if (trimmedString.match(/^(AND|OR|NOT)\s+/i)) {
         result.errors.push({
             type: 'operator_at_start',
             position: 0,
-            message: 'Boolean operator at the beginning of search',
+            message: '❌ Boolean operator at the beginning of search',
             suggestion: 'Remove the operator or add a keyword before it'
         });
         result.isValid = false;
     }
     
     if (trimmedString.match(/\s+(AND|OR|NOT)$/i)) {
+        const match = trimmedString.match(/\s+(AND|OR|NOT)$/i);
         result.errors.push({
             type: 'operator_at_end',
-            position: searchString.length - 1,
-            message: 'Boolean operator at the end of search',
-            suggestion: 'Remove the operator or add a keyword after it'
-        });
-        result.isValid = false;
-    }
-    
+            position: searchString.length - match[0].length,
+            message: '❌ Boolean operator at the end of search',
+            suggestion: 'Remove the operator or add a keyword after it',
 
-    
-    // Check for empty parentheses
-    const emptyParentheses = searchString.match(/\(\s*\)/g);
-    if (emptyParentheses) {
-        result.errors.push({
-            type: 'empty_parentheses',
-            message: 'Empty parentheses found',
-            suggestion: 'Remove empty parentheses or add content inside them'
         });
         result.isValid = false;
     }
     
-    // Check for missing spaces around operators
+    // 8. ✅ Missing Spaces Warning
     const missingSpaces = searchString.match(/\w+(AND|OR|NOT)\w+|\w+(AND|OR|NOT)\s+|\s+(AND|OR|NOT)\w+/gi);
     if (missingSpaces) {
         result.warnings.push({
             type: 'missing_spaces',
-            message: 'Missing spaces around boolean operators',
-            suggestion: 'Add spaces around operators for better readability'
+            message: '⚠️ Missing spaces around boolean operators',
+            suggestion: 'Add spaces around operators for better readability',
+
         });
     }
     
-    // Check for double quotes issues
-    const quoteCount = (searchString.match(/"/g) || []).length;
-    if (quoteCount % 2 !== 0) {
-        result.errors.push({
-            type: 'unmatched_quotes',
-            message: 'Unmatched quotes found',
-            suggestion: 'Check for missing opening or closing quotes'
-        });
-        result.isValid = false;
-    }
-    
-    // Check for very long search strings
+    // 9. ✅ Long Search Warning
     if (searchString.length > 1000) {
         result.warnings.push({
             type: 'long_search',
-            message: 'Search string is very long',
+            message: '⚠️ Search string is very long',
             suggestion: 'Consider breaking this into multiple searches'
         });
+    }
+    
+    // 10. ✅ Whitespace in Quoted Phrases Warning
+    const quotedPhrases = searchString.match(/"[^"]*"/g);
+    if (quotedPhrases) {
+        quotedPhrases.forEach(phrase => {
+            const content = phrase.slice(1, -1); // Remove quotes
+            if (content.startsWith(' ') || content.endsWith(' ')) {
+                result.warnings.push({
+                    type: 'whitespace_in_quotes',
+                    message: `⚠️ Unnecessary whitespace in quoted phrase: ${phrase}`,
+                    suggestion: 'This phrase has unnecessary whitespace inside the quotes — it may return no results.',
+
+                });
+            }
+        });
+    }
+    
+    // 11. ✅ Lowercase Boolean Operators Warning (Fixed)
+    // Only flag actual lowercase operators, not uppercase ones
+    const lowercaseOperators = searchString.match(/\s+(and|or|not)\s+/gi);
+    if (lowercaseOperators) {
+        lowercaseOperators.forEach(operator => {
+            const trimmedOperator = operator.trim();
+            // Only flag if it's actually lowercase (not mixed case)
+            if (trimmedOperator === trimmedOperator.toLowerCase()) {
+                const upperOperator = trimmedOperator.toUpperCase();
+                result.warnings.push({
+                    type: 'lowercase_operators',
+                    message: `⚠️ Lowercase boolean operator: "${trimmedOperator}"`,
+                    suggestion: 'Convert to uppercase for consistency',
+
+                });
+            }
+        });
+    }
+    
+    // 12. ✅ Enhanced Empty Groups Detection (including cases like (AND "Java"))
+    const emptyGroups = searchString.match(/\(\s*(AND|OR|NOT)\s+[^)]*\)/g);
+    if (emptyGroups) {
+        emptyGroups.forEach(group => {
+            result.errors.push({
+                type: 'invalid_empty_group',
+                message: `❌ Invalid group structure: ${group}`,
+                suggestion: 'Remove the group or fix the structure',
+
+            });
+            result.isValid = false;
+        });
+    }
+    
+    // 13. ✅ Enhanced Consecutive Operators Detection
+    const consecutiveOperators = searchString.match(/\s+(AND|OR|NOT)\s+(AND|OR|NOT)\s+/gi);
+    if (consecutiveOperators) {
+        consecutiveOperators.forEach(match => {
+            result.errors.push({
+                type: 'consecutive_operators_enhanced',
+                message: `❌ Consecutive operators: ${match.trim()}`,
+                suggestion: 'Remove one of the consecutive operators',
+
+            });
+            result.isValid = false;
+        });
+    }
+    
+
+    
+    // 15. ✅ Proper Quote Separation Detection (Completely Rewritten)
+    // Use proper tokenization to avoid false positives on valid expressions
+    
+    // Helper function to properly tokenize Boolean expressions
+    function tokenizeBooleanExpression(str) {
+        const tokens = [];
+        let current = '';
+        let inQuotes = false;
+        let i = 0;
+        
+        while (i < str.length) {
+            const char = str[i];
+            
+            if (char === '"') {
+                if (inQuotes) {
+                    // End of quoted phrase
+                    current += char;
+                    tokens.push({ type: 'quoted', value: current, start: i - current.length + 1, end: i });
+                    current = '';
+                    inQuotes = false;
+                } else {
+                    // Start of quoted phrase
+                    if (current.trim()) {
+                        tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });
+                        current = '';
+                    }
+                    current = char;
+                    inQuotes = true;
+                }
+            } else if (inQuotes) {
+                current += char;
+            } else if (/\s/.test(char)) {
+                // Whitespace - potential separator
+                if (current.trim()) {
+                    tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });
+                    current = '';
+                }
+            } else {
+                current += char;
+            }
+            i++;
+        }
+        
+        // Handle any remaining content
+        if (current.trim()) {
+            tokens.push({ type: 'unquoted', value: current.trim(), start: i - current.length, end: i - 1 });
+        }
+        
+        return tokens;
+    }
+    
+    // Tokenize the search string
+    const tokens = tokenizeBooleanExpression(searchString);
+    
+    // Pattern 1: Check for fused quoted + unquoted keywords (IMPROVED)
+    for (let i = 0; i < tokens.length - 1; i++) {
+        const current = tokens[i];
+        const next = tokens[i + 1];
+        
+        if (current.type === 'quoted' && next.type === 'unquoted') {
+            // Check if there's a valid separator between them
+            const betweenText = searchString.substring(current.end + 1, next.start);
+            const hasValidSeparator = /\s+(AND|OR|NOT)\s+/.test(betweenText) || 
+                                    /\s+/.test(betweenText) ||
+                                    /^\(/.test(betweenText) ||
+                                    /^\)/.test(betweenText) ||
+                                    /^(AND|OR|NOT)/.test(next.value) ||
+                                    /^\)$/.test(next.value) ||
+                                    /^\($/.test(next.value);
+            
+            // Additional check: if the next token is just a parenthesis, it's valid
+            if (next.value === ')' || next.value === '(') {
+                continue; // Skip this check - parentheses are valid after quotes
+            }
+            
+            if (!hasValidSeparator) {
+                result.errors.push({
+                    type: 'improper_quote_separation',
+                    position: current.end + 1,
+                    message: `❌ Quoted phrase not separated from unquoted keyword: "${current.value}${next.value}"`,
+                    suggestion: 'Add a space or operator between quoted and unquoted terms'
+                });
+                result.isValid = false;
+            }
+        }
+    }
+    
+    // Pattern 2: Check for consecutive quoted phrases without separator
+    for (let i = 0; i < tokens.length - 1; i++) {
+        const current = tokens[i];
+        const next = tokens[i + 1];
+        
+        if (current.type === 'quoted' && next.type === 'quoted') {
+            // Check if there's a valid separator between them
+            const betweenText = searchString.substring(current.end + 1, next.start);
+            const hasValidSeparator = /\s+(AND|OR|NOT)\s+/.test(betweenText) || 
+                                    /\s+/.test(betweenText) ||
+                                    /^\(/.test(betweenText);
+            
+            if (!hasValidSeparator) {
+                result.errors.push({
+                    type: 'consecutive_quotes',
+                    position: current.end + 1,
+                    message: `❌ Consecutive quoted phrases without separator: ${current.value}${next.value}`,
+                    suggestion: 'Add an operator between quoted phrases'
+                });
+                result.isValid = false;
+            }
+        }
+    }
+    
+    // Pattern 3: Check for operators inside quotes (only if truly inside a single quote)
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        
+        if (token.type === 'quoted') {
+            // Check if the quoted content contains a boolean operator
+            const content = token.value.slice(1, -1); // Remove quotes
+            const operatorMatch = content.match(/\b(AND|OR|NOT)\b/i);
+            
+            if (operatorMatch) {
+                // Check if this is part of a valid pattern like "phrase" OR "phrase"
+                const beforeToken = i > 0 ? tokens[i - 1] : null;
+                const afterToken = i < tokens.length - 1 ? tokens[i + 1] : null;
+                
+                const isValidPattern = (beforeToken && beforeToken.type === 'quoted') ||
+                                    (afterToken && afterToken.type === 'quoted');
+                
+                if (!isValidPattern) {
+                    result.warnings.push({
+                        type: 'operator_in_quotes',
+                        position: token.start,
+                        message: `⚠️ Boolean operator "${operatorMatch[1]}" found inside quotes: ${token.value}`,
+                        suggestion: 'Extract the operator or ensure it\'s part of an intentional phrase'
+                    });
+                }
+            }
+        }
     }
     
     return result;
@@ -2857,47 +3372,105 @@ function updateSyntaxValidationDisplay(validationResult) {
     
     const container = document.getElementById('syntaxValidationContainer');
     
+    // 4. ✅ Real-Time Syntax Validation - Color-coded styling
+    textarea.classList.remove('syntax-error', 'syntax-warning', 'syntax-valid');
+    
     if (validationResult.isValid && validationResult.errors.length === 0 && validationResult.warnings.length === 0) {
-        container.innerHTML = '<div class="validation-success">✅ Search syntax is valid</div>';
-        textarea.classList.remove('syntax-error');
+        // 🟢 Green = valid
         textarea.classList.add('syntax-valid');
-    } else {
-        let html = '';
+        container.innerHTML = `
+            <div class="validation-success">
+                <div class="validation-header">
+                    <span class="validation-icon">✅</span>
+                    <span class="validation-title">Search syntax is valid</span>
+                </div>
+            </div>
+        `;
+    } else if (validationResult.errors.length > 0) {
+        // 🔴 Red = error
+        textarea.classList.add('syntax-error');
+        let html = `
+            <div class="validation-errors">
+                <div class="validation-header">
+                    <span class="validation-icon">❌</span>
+                    <span class="validation-title">${validationResult.errors.length} Syntax Error${validationResult.errors.length > 1 ? 's' : ''} Found:</span>
+                </div>
+                <div class="validation-list">
+        `;
         
-        // Show errors
-        if (validationResult.errors.length > 0) {
-            html += '<div class="validation-errors">';
-            html += '<h4>❌ Syntax Errors:</h4>';
-            validationResult.errors.forEach(error => {
-                html += `<div class="validation-item error">`;
-                html += `<strong>${error.message}</strong>`;
-                if (error.suggestion) {
-                    html += `<br><em>Suggestion: ${error.suggestion}</em>`;
-                }
-                html += '</div>';
-            });
-            html += '</div>';
-            textarea.classList.add('syntax-error');
-            textarea.classList.remove('syntax-valid');
-        }
+        validationResult.errors.forEach((error, index) => {
+            html += `
+                <div class="validation-item error" onclick="highlightError(${error.position || 0})">
+                    <div class="validation-item-content">
+                        <div class="validation-message">${error.message}</div>
+                        <div class="validation-suggestion">${error.suggestion}</div>
+                    </div>
+                </div>
+            `;
+        });
         
-        // Show warnings
+        html += '</div></div>';
+        
+        // Add warnings if any
         if (validationResult.warnings.length > 0) {
-            html += '<div class="validation-warnings">';
-            html += '<h4>⚠️ Warnings:</h4>';
-            validationResult.warnings.forEach(warning => {
-                html += `<div class="validation-item warning">`;
-                html += `<strong>${warning.message}</strong>`;
-                if (warning.suggestion) {
-                    html += `<br><em>Suggestion: ${warning.suggestion}</em>`;
-                }
-                html += '</div>';
+            html += `
+                <div class="validation-warnings">
+                    <div class="validation-header">
+                        <span class="validation-icon">⚠️</span>
+                        <span class="validation-title">${validationResult.warnings.length} Warning${validationResult.warnings.length > 1 ? 's' : ''}:</span>
+                    </div>
+                    <div class="validation-list">
+            `;
+            
+            validationResult.warnings.forEach((warning, index) => {
+                html += `
+                    <div class="validation-item warning">
+                        <div class="validation-item-content">
+                            <div class="validation-message">${warning.message}</div>
+                            <div class="validation-suggestion">${warning.suggestion}</div>
+                        </div>
+                    </div>
+                `;
             });
-            html += '</div>';
+            
+            html += '</div></div>';
         }
         
         container.innerHTML = html;
+    } else if (validationResult.warnings.length > 0) {
+        // 🟡 Yellow = warning
+        textarea.classList.add('syntax-warning');
+        let html = `
+            <div class="validation-warnings">
+                <div class="validation-header">
+                    <span class="validation-icon">⚠️</span>
+                    <span class="validation-title">${validationResult.warnings.length} Warning${validationResult.warnings.length > 1 ? 's' : ''}:</span>
+                </div>
+                <div class="validation-list">
+        `;
+        
+        validationResult.warnings.forEach((warning, index) => {
+            html += `
+                <div class="validation-item warning">
+                    <div class="validation-item-content">
+                        <div class="validation-message">${warning.message}</div>
+                        <div class="validation-suggestion">${warning.suggestion}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+        container.innerHTML = html;
     }
+}
+
+
+
+function highlightError(position) {
+    const textarea = document.getElementById('booleanString');
+    textarea.focus();
+    textarea.setSelectionRange(position, position + 1);
 }
 
 // Copy the boolean string to clipboard
@@ -2962,6 +3535,7 @@ function addToRecentlyUsed(searchString) {
     // Save to current role if in role context
     if (currentRole) {
         currentRole.recentlyUsedSearches = recentlyUsedSearches;
+        currentRole.savedSearches = savedSearches;
         currentRole.lastModified = new Date().toISOString();
     }
     
@@ -2990,6 +3564,14 @@ function renderRecentlyUsedSearches() {
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'recent-search-actions';
         
+        // Star button for saving/unsaving
+        const starBtn = document.createElement('button');
+        starBtn.className = 'recent-search-btn star-search-btn';
+        const isSaved = savedSearches.some(saved => saved.search === item.search);
+        starBtn.innerHTML = isSaved ? '★' : '☆';
+        starBtn.title = isSaved ? 'Remove from saved searches' : 'Add to saved searches';
+        starBtn.onclick = () => toggleSavedSearch(item.search);
+        
         const useBtn = document.createElement('button');
         useBtn.className = 'recent-search-btn use-search-btn';
         useBtn.textContent = 'Use';
@@ -3005,6 +3587,7 @@ function renderRecentlyUsedSearches() {
         deleteBtn.textContent = 'Delete';
         deleteBtn.onclick = () => deleteRecentSearch(index);
         
+        actionsDiv.appendChild(starBtn);
         actionsDiv.appendChild(useBtn);
         actionsDiv.appendChild(copyBtn);
         actionsDiv.appendChild(deleteBtn);
@@ -3051,6 +3634,148 @@ async function deleteRecentSearch(index) {
         recentlyUsedSearches.splice(index, 1);
         saveData();
         renderRecentlyUsedSearches();
+    }
+}
+
+// Toggle saved search
+function toggleSavedSearch(searchString) {
+    const existingIndex = savedSearches.findIndex(saved => saved.search === searchString);
+    
+    if (existingIndex !== -1) {
+        // Remove from saved searches
+        savedSearches.splice(existingIndex, 1);
+        console.log('Removed from saved searches:', searchString);
+    } else {
+        // Add to saved searches
+        savedSearches.unshift({
+            search: searchString,
+            timestamp: Date.now()
+        });
+        console.log('Added to saved searches:', searchString);
+    }
+    
+    saveData();
+    renderRecentlyUsedSearches();
+    renderSavedSearches();
+}
+
+// Render saved searches
+function renderSavedSearches() {
+    const container = document.getElementById('savedSearchesContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (savedSearches.length === 0) {
+        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic; text-align: center;">No saved searches. Click the star (☆) next to any search to save it.</p>';
+        return;
+    }
+    
+    savedSearches.forEach((item, index) => {
+        const searchDiv = document.createElement('div');
+        searchDiv.className = 'saved-search-item';
+        
+        const searchText = document.createElement('div');
+        searchText.className = 'saved-search-text';
+        searchText.textContent = item.search;
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'saved-search-actions';
+        
+        const starBtn = document.createElement('button');
+        starBtn.className = 'saved-search-btn star-search-btn';
+        starBtn.innerHTML = '★';
+        starBtn.title = 'Remove from saved searches';
+        starBtn.onclick = () => toggleSavedSearch(item.search);
+        
+        const useBtn = document.createElement('button');
+        useBtn.className = 'saved-search-btn use-search-btn';
+        useBtn.textContent = 'Use';
+        useBtn.onclick = () => useSavedSearch(item.search);
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'saved-search-btn copy-search-btn';
+        copyBtn.textContent = 'Copy';
+        copyBtn.onclick = () => copySavedSearch(item.search);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'saved-search-btn remove-search-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = () => removeSavedSearch(index);
+        
+        actionsDiv.appendChild(starBtn);
+        actionsDiv.appendChild(useBtn);
+        actionsDiv.appendChild(copyBtn);
+        actionsDiv.appendChild(removeBtn);
+        
+        searchDiv.appendChild(searchText);
+        searchDiv.appendChild(actionsDiv);
+        
+        container.appendChild(searchDiv);
+    });
+}
+
+// Use a saved search
+function useSavedSearch(searchString) {
+    document.getElementById('booleanString').value = searchString;
+    document.getElementById('booleanString').focus();
+}
+
+// Copy a saved search to clipboard
+function copySavedSearch(searchString) {
+    const tempTextarea = document.createElement('textarea');
+    tempTextarea.value = searchString;
+    document.body.appendChild(tempTextarea);
+    tempTextarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempTextarea);
+    
+    // Show feedback
+    const copyBtn = event.target;
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = '✅ Copied!';
+    copyBtn.style.backgroundColor = '#27ae60';
+    
+    setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.backgroundColor = '#f39c12';
+    }, 2000);
+}
+
+// Remove a saved search
+async function removeSavedSearch(index) {
+    const confirmed = await customConfirm('Remove Saved Search', 'Are you sure you want to remove this search from saved searches?');
+    if (confirmed) {
+        savedSearches.splice(index, 1);
+        saveData();
+        renderSavedSearches();
+        renderRecentlyUsedSearches(); // Update star icons in recently used
+    }
+}
+
+// Filter saved searches
+function filterSavedSearches() {
+    const filterInput = document.getElementById('savedSearchesFilter');
+    const filterValue = filterInput.value.toLowerCase();
+    
+    const container = document.getElementById('savedSearchesContainer');
+    const searchItems = container.querySelectorAll('.saved-search-item');
+    
+    searchItems.forEach(item => {
+        const searchText = item.querySelector('.saved-search-text').textContent.toLowerCase();
+        if (searchText.includes(filterValue)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Setup saved searches filter
+function setupSavedSearchesFilter() {
+    const filterInput = document.getElementById('savedSearchesFilter');
+    if (filterInput) {
+        filterInput.addEventListener('input', filterSavedSearches);
     }
 }
 
@@ -3108,8 +3833,14 @@ function renderKeywordCategory(container, categoryName, displayName, getKeywords
 
 // Trainer Section
 function setupTrainerSection() {
+    console.log('Setting up Trainer section...');
     const saveTrainingBtn = document.getElementById('saveTraining');
-    saveTrainingBtn.addEventListener('click', saveTraining);
+    if (saveTrainingBtn) {
+        saveTrainingBtn.addEventListener('click', saveTraining);
+        console.log('Trainer section setup complete');
+    } else {
+        console.warn('saveTraining button not found');
+    }
 }
 
 function saveTraining() {
@@ -3319,18 +4050,24 @@ function deleteTraining(index) {
 
 // Data persistence
 function saveData() {
+    // Get current user ID for user-specific storage
+    const userId = currentUser ? currentUser.uid : 'guest';
+    const storageKey = `pluginData_${userId}`;
+    
     const data = {
         categories: categories,
         categoryData: categoryData,
         trainingContent: trainingContent,
         recentlyUsedSearches: recentlyUsedSearches,
+        savedSearches: savedSearches,
         roles: roles,
-        lastSaved: new Date().toISOString()
+        lastSaved: new Date().toISOString(),
+        userId: userId
     };
     
     try {
-    localStorage.setItem('pluginData', JSON.stringify(data));
-        console.log('Data saved successfully at:', new Date().toLocaleString());
+        localStorage.setItem(storageKey, JSON.stringify(data));
+        console.log(`Data saved successfully for user ${userId} at:`, new Date().toLocaleString());
         updateDataStatus();
     } catch (error) {
         console.error('Error saving data:', error);
@@ -3348,11 +4085,19 @@ function updateDataStatus() {
 
 // Backup and restore functions
 function exportData() {
+    const userId = currentUser ? currentUser.uid : 'guest';
+    const userDisplay = currentUser ? currentUser.email : 'Guest User';
+    
     const data = {
         categories: categories,
         categoryData: categoryData,
         trainingContent: trainingContent,
-        exportedAt: new Date().toISOString()
+        recentlyUsedSearches: recentlyUsedSearches,
+        savedSearches: savedSearches,
+        roles: roles,
+        exportedAt: new Date().toISOString(),
+        exportedBy: userDisplay,
+        userId: userId
     };
     
     const dataStr = JSON.stringify(data, null, 2);
@@ -3361,11 +4106,11 @@ function exportData() {
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `plugin-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `gold-boolean-backup-${userDisplay.replace(/[^a-zA-Z0-9]/g, '_')}-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     
     URL.revokeObjectURL(url);
-    showCustomAlert('Export Success', 'Backup exported successfully!');
+    showCustomAlert('Export Success', `Backup exported successfully for ${userDisplay}!`);
 }
 
 function importData() {
@@ -3406,14 +4151,18 @@ function importData() {
 }
 
 function clearAllData() {
-    showCustomConfirm('Clear All Data', 'Are you sure you want to clear ALL data? This action cannot be undone.', (confirmed1) => {
+    const userId = currentUser ? currentUser.uid : 'guest';
+    const userDisplay = currentUser ? currentUser.email : 'Guest User';
+    
+    showCustomConfirm('Clear All Data', `Are you sure you want to clear ALL data for ${userDisplay}? This action cannot be undone.`, (confirmed1) => {
         if (confirmed1) {
             showCustomConfirm('Final Confirmation', 'This will delete all your boolean searches, training content, and settings. Are you absolutely sure?', (confirmed2) => {
                 if (confirmed2) {
-                    localStorage.removeItem('pluginData');
+                    const storageKey = `pluginData_${userId}`;
+                    localStorage.removeItem(storageKey);
                     initializeDefaultData();
                     renderAll();
-                    showCustomAlert('Data Cleared', 'All data has been cleared.');
+                    showCustomAlert('Data Cleared', `All data for ${userDisplay} has been cleared.`);
                 }
             });
         }
@@ -3533,14 +4282,20 @@ function forceReload() {
 }
 
 function loadData() {
-    const savedData = localStorage.getItem('pluginData');
+    // Get current user ID for user-specific storage
+    const userId = currentUser ? currentUser.uid : 'guest';
+    const storageKey = `pluginData_${userId}`;
+    
+    console.log(`Loading data for user: ${userId}`);
+    
+    const savedData = localStorage.getItem(storageKey);
     if (savedData) {
         try {
-        const data = JSON.parse(savedData);
-        categories = data.categories || {
-            primary: ['Titles', 'Domain', 'Industry'],
-            secondary: ['Context', 'Certifications & Clearances']
-        };
+            const data = JSON.parse(savedData);
+            categories = data.categories || {
+                primary: ['Titles', 'Domain', 'Industry'],
+                secondary: ['Context', 'Certifications & Clearances']
+            };
             
             // Load saved data but ensure proper structure
             categoryData = data.categoryData || {};
@@ -3625,6 +4380,7 @@ function loadData() {
             
             trainingContent = data.trainingContent || [];
             recentlyUsedSearches = data.recentlyUsedSearches || [];
+        savedSearches = data.savedSearches || [];
             roles = data.roles || [];
             
             console.log('Data loaded successfully:', categoryData);
@@ -3740,31 +4496,7 @@ function filterRolesByCriteria(roles) {
     });
 }
 
-// Dark Mode Functionality
-function initDarkMode() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateDarkModeButton(savedTheme === 'dark');
-    }
-}
 
-function toggleDarkMode() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateDarkModeButton(newTheme === 'dark');
-}
-
-function updateDarkModeButton(isDark) {
-    const toggleBtn = document.getElementById('darkModeToggle');
-    if (toggleBtn) {
-        toggleBtn.innerHTML = isDark ? '☀️' : '🌙';
-        toggleBtn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
-    }
-}
 
 // Temporary keyword pool functionality
 let tempKeywords = [];
@@ -3922,11 +4654,29 @@ function addTempToBoolean() {
         return;
     }
 
+    // Check which Auto mode is currently active
+    const autoAndBtn = document.getElementById('autoAndBtn');
+    const autoOrBtn = document.getElementById('autoOrBtn');
+    const isAutoAndActive = autoAndBtn && autoAndBtn.classList.contains('active');
+    const isAutoOrActive = autoOrBtn && autoOrBtn.classList.contains('active');
+    
+    // Determine the operator to use for joining keywords
+    let joinOperator = ' AND '; // Default to AND
+    if (isAutoOrActive) {
+        joinOperator = ' OR ';
+        console.log('Auto OR mode detected, using OR to join keywords');
+    } else if (isAutoAndActive) {
+        joinOperator = ' AND ';
+        console.log('Auto AND mode detected, using AND to join keywords');
+    } else {
+        console.log('No Auto mode active, defaulting to AND');
+    }
+
     const currentValue = booleanInput.value;
     console.log('Current boolean input value:', currentValue);
     
-    const keywordsString = tempKeywords.join(' AND ');
-    console.log('Keywords string:', keywordsString);
+    const keywordsString = tempKeywords.join(joinOperator);
+    console.log('Keywords string with operator:', keywordsString);
     
     const newValue = currentValue ? `${currentValue} AND (${keywordsString})` : `(${keywordsString})`;
     console.log('New value:', newValue);
@@ -3954,3 +4704,352 @@ function renderTempKeywords() {
         tempKeywordsList.appendChild(keywordItem);
     });
 }
+
+// Error threshold modal system
+let errorThresholdModalsShown = {
+    5: false,
+    10: false,
+    15: false,
+    20: false
+};
+
+function showErrorThresholdModal(errorCount) {
+    console.log('showErrorThresholdModal called with errorCount:', errorCount);
+    console.log('Current errorThresholdModalsShown state:', errorThresholdModalsShown);
+    
+    let modalTitle = '';
+    let modalMessage = '';
+    let shouldShow = false;
+    
+    // Determine which threshold was reached
+    if (errorCount >= 20 && !errorThresholdModalsShown[20]) {
+        modalTitle = "Stop. Just Stop.";
+        modalMessage = "You've hit 20+ errors. We've alerted your manager. Your keyboard is under investigation. And frankly, the Boolean string has filed for emotional distress. Please — for everyone's sake — start over.";
+        errorThresholdModalsShown[20] = true;
+        shouldShow = true;
+        console.log('Triggering 20+ error modal');
+    } else if (errorCount >= 15 && !errorThresholdModalsShown[15]) {
+        modalTitle = "This Is Getting Impressive (In the Wrong Way)";
+        modalMessage = "15 errors is no small feat. At this point, it's less a Boolean string and more a cry for help. Take your time. Rome wasn't built in a day, and neither is functional logic, apparently.";
+        errorThresholdModalsShown[15] = true;
+        shouldShow = true;
+        console.log('Triggering 15+ error modal');
+    } else if (errorCount >= 10 && !errorThresholdModalsShown[10]) {
+        modalTitle = "We All Start Somewhere";
+        modalMessage = "10 errors and counting! While ambition is admirable, accuracy is occasionally helpful too. You may want to double-check whether you're actually writing a search or accidentally recreating abstract art.";
+        errorThresholdModalsShown[10] = true;
+        shouldShow = true;
+        console.log('Triggering 10+ error modal');
+    } else if (errorCount >= 5 && !errorThresholdModalsShown[5]) {
+        modalTitle = "Might Be Time for a Quick Breather";
+        modalMessage = "It looks like you've made a few syntax errors. Not catastrophic… yet. Perhaps a coffee break is in order before we continue this Boolean journey?";
+        errorThresholdModalsShown[5] = true;
+        shouldShow = true;
+        console.log('Triggering 5+ error modal');
+    }
+    
+    console.log('shouldShow:', shouldShow);
+    if (shouldShow) {
+        // Create and show the modal
+        console.log('Creating modal with title:', modalTitle);
+        showErrorThresholdModalUI(modalTitle, modalMessage);
+    }
+}
+
+function showErrorThresholdModalUI(title, message) {
+    // Create modal HTML
+    const modalHTML = `
+        <div id="errorThresholdModal" class="modal">
+            <div class="modal-content error-threshold-modal">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <span class="close" onclick="closeErrorThresholdModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p>${message}</p>
+                    <div class="modal-options">
+                        <label>
+                            <input type="checkbox" id="dontShowAgainCheckbox"> Don't show again for this search
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeErrorThresholdModal()" class="ok-btn">OK</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show modal
+    const modal = document.getElementById('errorThresholdModal');
+    modal.style.display = 'block';
+    
+    // Add event listener for Enter key
+    document.addEventListener('keydown', handleErrorThresholdModalKeydown);
+}
+
+function closeErrorThresholdModal() {
+    const modal = document.getElementById('errorThresholdModal');
+    if (modal) {
+        // Check if "Don't show again" is checked
+        const dontShowAgain = document.getElementById('dontShowAgainCheckbox');
+        if (dontShowAgain && dontShowAgain.checked) {
+            // Disable all future modals for this session
+            Object.keys(errorThresholdModalsShown).forEach(key => {
+                errorThresholdModalsShown[key] = true;
+            });
+        }
+        
+        modal.remove();
+        document.removeEventListener('keydown', handleErrorThresholdModalKeydown);
+    }
+}
+
+function handleErrorThresholdModalKeydown(event) {
+    if (event.key === 'Enter' || event.key === 'Escape') {
+        closeErrorThresholdModal();
+    }
+}
+
+// Reset error threshold modals when starting a new search
+function resetErrorThresholdModals() {
+    errorThresholdModalsShown = {
+        5: false,
+        10: false,
+        15: false,
+        20: false
+    };
+}
+
+// Keyboard shortcuts for Auto AND/OR modes
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(event) {
+        // Only handle arrow keys
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+            // Prevent default behavior for arrow keys
+            event.preventDefault();
+            
+            const autoAndBtn = document.getElementById('autoAndBtn');
+            const autoOrBtn = document.getElementById('autoOrBtn');
+            
+            if (event.key === 'ArrowUp') {
+                // Up Arrow (↑) - Activate Auto AND
+                if (autoAndBtn) {
+                    autoAndBtn.click();
+                    console.log('Keyboard shortcut: Auto AND activated');
+                }
+            } else if (event.key === 'ArrowDown') {
+                // Down Arrow (↓) - Activate Auto OR
+                if (autoOrBtn) {
+                    autoOrBtn.click();
+                    console.log('Keyboard shortcut: Auto OR activated');
+                }
+            }
+        }
+    });
+}
+
+// Authentication Gateway Functions
+// Email auth removed - Google or Guest only
+
+async function signInWithGoogle() {
+    const googleBtn = document.querySelector('.google-auth-btn');
+    
+    try {
+        // Show loading state
+        if (googleBtn) {
+            googleBtn.innerHTML = '<span class="auth-icon">⏳</span><span class="auth-text">Signing in...</span>';
+            googleBtn.disabled = true;
+        }
+        
+        console.log('Starting Google sign-in...');
+        
+        // Check if Firebase is properly initialized
+        if (!firebase.auth) {
+            throw new Error('Firebase Auth not available');
+        }
+        
+        console.log('Creating Google provider...');
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        console.log('Google provider created with scopes:', provider.scopes);
+        
+        // Use signInWithPopup for better user experience
+        console.log('Attempting signInWithPopup...');
+        const result = await firebase.auth().signInWithPopup(provider);
+        console.log('Google sign-in successful:', result.user.email);
+        
+    } catch (error) {
+        console.error('Google sign-in error:', error);
+        showCustomAlert('Error', 'Google sign-in failed: ' + error.message);
+    } finally {
+        // Reset button state
+        if (googleBtn) {
+            googleBtn.innerHTML = '<span class="auth-icon">🔍</span><span class="auth-text">Sign in with Google</span>';
+            googleBtn.disabled = false;
+        }
+    }
+}
+
+async function signInAsGuest() {
+    console.log('Starting instant guest sign-in...');
+    
+    // Immediately show the app and create a fake guest user
+    const fakeGuestUser = {
+        uid: 'guest_' + Date.now(),
+        isAnonymous: true,
+        email: null,
+        displayName: 'Guest User'
+    };
+    
+    // Set guest session flag immediately
+    sessionStorage.setItem('guestSessionStarted', 'true');
+    console.log('Guest session started immediately');
+    
+    // Update UI immediately
+    updateAuthUI(fakeGuestUser);
+    
+    // Handle Firebase auth in background (non-blocking)
+    try {
+        if (firebase.auth) {
+            console.log('Attempting Firebase anonymous sign-in in background...');
+            const result = await firebase.auth().signInAnonymously();
+            console.log('Firebase guest sign-in successful:', result.user.uid);
+            
+            // Update with real Firebase user
+            updateAuthUI(result.user);
+        }
+    } catch (error) {
+        console.error('Firebase guest sign-in error:', error);
+        // Don't show error to user since they're already signed in
+    }
+}
+
+// Email auth functions removed - Google or Guest only
+
+async function logout() {
+    try {
+        await firebase.auth().signOut();
+        // Clear guest session flag on logout
+        sessionStorage.removeItem('guestSessionStarted');
+        showAuthGateway();
+        
+        // Refresh the page after logout
+        console.log('Logout successful, refreshing page...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 500); // Small delay to ensure auth state is updated
+        
+    } catch (error) {
+        console.error('Logout error:', error);
+        showCustomAlert('Error', 'Failed to logout: ' + error.message);
+    }
+}
+
+function showAuthGateway() {
+    document.getElementById('authGateway').style.display = 'flex';
+    document.getElementById('appContainer').style.display = 'none';
+    isAuthenticated = false;
+}
+
+function showApp() {
+    document.getElementById('authGateway').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    isAuthenticated = true;
+    console.log('App is now visible and authenticated');
+}
+
+function updateAuthUI(user) {
+    console.log('updateAuthUI called with user:', user);
+    
+    if (user) {
+        // User is authenticated
+        currentUser = user;
+        showApp();
+        
+        // Update user info display
+        const userInfo = document.getElementById('userInfo');
+        const userEmail = document.getElementById('userEmail');
+        
+        console.log('Found elements:', { userInfo: !!userInfo, userEmail: !!userEmail });
+        
+        if (userInfo && userEmail) {
+            // Show user info
+            userInfo.style.display = 'flex';
+            
+            // Display user information
+            if (user.isAnonymous) {
+                userEmail.textContent = '👤 Guest User';
+                console.log('Set user display to: Guest User');
+            } else if (user.email) {
+                // Extract username (everything before @ symbol)
+                const username = user.email.split('@')[0];
+                userEmail.textContent = `📧 ${username}`;
+                console.log('Set user display to:', username);
+            } else {
+                userEmail.textContent = '👤 Authenticated User';
+                console.log('Set user display to: Authenticated User');
+            }
+        } else {
+            console.error('Missing elements for user info display');
+        }
+    } else {
+        // User is not authenticated
+        currentUser = null;
+        showAuthGateway();
+        
+        // Hide user info
+        const userInfo = document.getElementById('userInfo');
+        
+        if (userInfo) {
+            userInfo.style.display = 'none';
+        }
+    }
+}
+
+// Listen for auth state changes
+firebase.auth().onAuthStateChanged(function(user) {
+    console.log('Auth state changed:', user ? 'User authenticated' : 'No user');
+    
+    if (user && user.isAnonymous) {
+        // Check if this is a page refresh for a guest user
+        const isPageRefresh = !sessionStorage.getItem('guestSessionStarted');
+        
+        if (isPageRefresh) {
+            // Guest user refreshed the page - log them out
+            console.log('Guest user refreshed page - logging out');
+            firebase.auth().signOut();
+            return;
+        }
+    }
+    
+    // Update UI first
+    updateAuthUI(user);
+    
+    // If user is authenticated, set up the app
+    if (user) {
+        try {
+            console.log('Setting up app components...');
+            loadData();
+            setupNavigation();
+            setupStorageSection();
+            setupBuilderSection();
+            setupTrainerSection();
+            setupKeyboardShortcuts();
+            renderAll();
+            console.log('App setup complete');
+        } catch (error) {
+            console.error('Error setting up app:', error);
+            // Even if there's an error, ensure basic navigation works
+            try {
+                setupNavigation();
+            } catch (navError) {
+                console.error('Navigation setup failed:', navError);
+            }
+        }
+    }
+});

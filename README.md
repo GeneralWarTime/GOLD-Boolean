@@ -1,6 +1,6 @@
-# BULLION GOLD
+# GOLD Boolean
 
-A sophisticated web-based application for managing recruitment keywords, boolean searches, and role management with advanced filtering capabilities and dark mode support.
+A sophisticated web-based application for managing recruitment keywords, boolean searches, and role management with advanced filtering capabilities.
 
 ## Features
 
@@ -14,8 +14,19 @@ A sophisticated web-based application for managing recruitment keywords, boolean
 - **Builder Section**: Build complex search strings by combining keywords from different categories
   - Three-column layout for role cards
   - Advanced search functionality with positioning controls
+  - **Saved Searches**: Save and manage favorite search strings with star icons
+  - **Dynamic "Add All to Search"**: Automatically uses active Auto AND/OR mode
 
 - **Trainer Section**: Store and manage training content
+
+### Boolean Search Features
+- **Error Deduplication**: Groups identical syntax errors with counts (e.g., "Unmatched closing parenthesis (x3)")
+- **Error Threshold Modals**: Sarcastic feedback pop-ups at 5, 10, 15, 20+ errors
+- **Enhanced Validation**: Improved handling of parentheses, quoted terms, and complex expressions
+- **Keyboard Shortcuts**: 
+  - Up Arrow (↑): Activate Auto AND mode
+  - Down Arrow (↓): Activate Auto OR mode
+  - Works even when Boolean input field is focused
 
 ### Role Management Dashboard
 - **Advanced Filtering System**: Filter roles by Client, ID, and Title
@@ -28,16 +39,12 @@ A sophisticated web-based application for managing recruitment keywords, boolean
 - **Role Cards**: Multi-column layout (3 cards per row) for better organization
 
 ### User Interface
-- **Dark Mode**: Complete dark theme with black and gold color scheme
-  - Toggle button next to save files button
-  - White text on dark backgrounds
-  - Persistent theme preference storage
-  - Sophisticated gold gradient effects
-
 - **Modern Design**: Sharp, smart, and simple interface
   - Neutral color palette
   - Professional typography
   - Responsive layout
+  - Sophisticated gold gradient effects
+  - **Custom Favicon**: Gold bullion icon in browser tabs
 
 ### Data Management
 - **Local Storage**: All data stored locally in browser's localStorage
@@ -81,17 +88,26 @@ A sophisticated web-based application for managing recruitment keywords, boolean
 3. Create boolean searches with multiple options
 4. Use the Builder section to combine keywords
 5. Store training content in the Trainer section
-6. Toggle dark mode using the moon button next to save files
-7. Use the role management dashboard with advanced filtering
+6. Use the role management dashboard with advanced filtering
+7. **Use keyboard shortcuts for quick Auto AND/OR switching**
+8. **Save favorite searches with star icons**
+9. **Monitor error thresholds with helpful modal feedback**
 
 ## Setup
 
 Simply open `index.html` in any modern web browser. No additional dependencies required.
 
-## Recent Updates (v1.8)
+## Recent Updates (v1.9)
 
-- **Branding Update**: Changed from "PLUG IN OR PLUG OUT" to "BULLION GOLD"
-- **Dark Mode**: Complete dark theme implementation with black and gold colors
+- **Branding Update**: Changed from "BULLION GOLD" to "GOLD Boolean"
+- **Error Deduplication**: Groups identical syntax errors with counts
+- **Error Threshold Modals**: Sarcastic feedback at 5, 10, 15, 20+ errors
+- **Keyboard Shortcuts**: Up/Down arrows for Auto AND/OR modes
+- **Enhanced Boolean Validation**: Improved parentheses and quoted term handling
+- **Saved Searches**: Star icons and saved searches component with filter
+- **Dynamic "Add All to Search"**: Uses active Auto AND/OR mode
+- **Custom Favicon**: Gold bullion icon implementation
+- **Dark Mode Removal**: Completely removed for cleaner interface
 - **Role Management**: Advanced filtering system with modal interface
 - **Layout Improvements**: Three-column role card layout
 - **Search Positioning**: Configurable search input placement
