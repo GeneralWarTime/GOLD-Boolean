@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - GOLD Boolean</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div style="padding: 20px; background: white; color: black;">
+        <h1>Debug Page</h1>
+        <p>If you can see this, the basic HTML and CSS are working.</p>
+        
+        <div id="authGate" class="auth-gate">
+            <div class="auth-gate-content">
+                <div class="auth-logo-section">
+                    <img src="/gold-bullion-favicon.png" alt="GOLD Boolean" class="auth-logo">
+                    <h1 class="auth-title">
+                        <span class="gold-text">GOLD</span> <span class="bullion-text"><i>Boolean</i></span>
+                    </h1>
+                </div>
+                <p class="auth-tagline">Recruit smarter. Build better strings.</p>
+                <div class="auth-options">
+                    <button class="auth-btn google-btn">Sign in with Google</button>
+                    <div class="auth-divider">
+                        <span>or</span>
+                    </div>
+                    <button class="auth-btn email-btn">📧 Sign in with Email</button>
+                    <button class="auth-btn guest-btn">👤 Continue as Guest</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="mainApp" class="container" style="display: none;">
+            <h2>Main App Section</h2>
+            <p>This should show after authentication.</p>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 10px; background: #f0f0f0;">
+            <h3>Debug Info:</h3>
+            <p id="debugInfo">Loading...</p>
+        </div>
+    </div>
+    
+    <script>
+        console.log('Debug page loaded');
+        document.getElementById('debugInfo').innerHTML = 'Page loaded successfully at ' + new Date().toLocaleTimeString();
+        
+        // Test if we can access DOM elements
+        const authGate = document.getElementById('authGate');
+        const mainApp = document.getElementById('mainApp');
+        
+        console.log('Auth gate found:', !!authGate);
+        console.log('Main app found:', !!mainApp);
+        
+        // Test CSS classes
+        if (authGate) {
+            authGate.classList.add('hidden');
+            console.log('Added hidden class to auth gate');
+            setTimeout(() => {
+                authGate.classList.remove('hidden');
+                mainApp.classList.add('visible');
+                console.log('Removed hidden class, added visible to main app');
+            }, 2000);
+        }
+    </script>
+</body>
+</html> 

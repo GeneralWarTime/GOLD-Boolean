@@ -1666,6 +1666,38 @@ button:hover, .save-btn:hover, .builder-btn:hover {
     background: #218838;
 }
 
+.input-button-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-button-container input {
+    flex: 1;
+}
+
+.add-boolean-options-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.add-boolean-options-btn:hover {
+    background: var(--primary-hover);
+}
+
+.add-boolean-options-btn:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+}
+
  
 
 /* Error Threshold Modal Styles */

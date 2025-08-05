@@ -7,6 +7,9 @@ let categories = {
 // Saved searches storage
 let savedSearches = [];
 
+// Temporary keywords storage (user-specific, not for guests)
+let tempKeywords = [];
+
 // Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA0Sw8STec1LHuFN9_fxN7ni506TrD51hs",
@@ -160,6 +163,26 @@ let sections;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('=== GOLD BOOLEAN AUTH SYSTEM v15 ===');
     console.log('DOM loaded, authentication system ready...');
+    
+    // Check for data isolation on page load
+    const lastUserId = sessionStorage.getItem('lastUserId');
+    const currentUserId = sessionStorage.getItem('currentUserId');
+    
+    if (lastUserId && lastUserId !== currentUserId) {
+        console.log('User changed since last session, clearing all data...');
+        clearAllDataFromMemory();
+        // Clear all localStorage data for security
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('pluginData_')) {
+                localStorage.removeItem(key);
+            }
+        });
+    }
+    
+    // Update last user ID
+    if (currentUserId) {
+        sessionStorage.setItem('lastUserId', currentUserId);
+    }
 });
 
 // Navigation functionality
@@ -188,6 +211,13 @@ function setupNavigation() {
                 if (section.id === targetSection) {
                     section.classList.add('active');
                     console.log('Activated section:', targetSection);
+                    
+                    // Setup Builder section components when Builder is activated
+                    if (targetSection === 'builder') {
+                        console.log('Builder section activated, setting up components...');
+                        setupTempKeywordPool();
+                        setupSavedSearchesFilter();
+                    }
                 }
             });
         });
@@ -490,34 +520,35 @@ function openDomainDetailsModal(subcategory, subSubcategory, titleName) {
     document.getElementById('selectedTitleName').setAttribute('data-subcategory', subcategory);
     document.getElementById('selectedTitleName').setAttribute('data-sub-subcategory', subSubcategory);
     
-    const existingOptions = document.getElementById('existingBooleanOptions');
-    existingOptions.innerHTML = booleanOptions.map(option => `
-        <div class="boolean-option-item">
-            <span>"${option}"</span>
-            <button class="delete-btn" onclick="removeBooleanOptionFromDomain('${subcategory}', '${subSubcategory}', '${titleName}', '${option}')">Delete</button>
-        </div>
-    `).join('');
+    // Initialize the current boolean terms for this modal
+    currentBooleanTerms = [...booleanOptions];
+    currentModalCategory = 'Domain';
+    currentModalSubcategory = subcategory;
+    currentModalSubSubcategory = subSubcategory;
+    currentModalTitleName = titleName;
     
-    document.getElementById('newBooleanOption').value = '';
+    // Render the existing terms
+    renderBooleanOptionsTermsList();
+    
+    document.getElementById('booleanOptionsInput').value = '';
     document.getElementById('titleDetailsModal').style.display = 'block';
+    
+    // Add input event listener to enable/disable the Add button
+    const input = document.getElementById('booleanOptionsInput');
+    const addButton = document.getElementById('addBooleanOptionsBtn');
+    
+    // Use oninput to avoid multiple event listeners
+    input.oninput = function() {
+        addButton.disabled = !this.value.trim();
+    };
+    
+    // Initially disable the button
+    addButton.disabled = true;
     
     // Add click event to make title editable
     const titleElement = document.getElementById('selectedTitleName');
     titleElement.onclick = function() {
         makeDomainTitleEditable(this);
-    };
-    
-    // Add event listener for adding new boolean options
-    const newOptionInput = document.getElementById('newBooleanOption');
-    newOptionInput.onkeypress = function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            const newOption = this.value.trim();
-            if (newOption) {
-                addBooleanOptionToDomain(subcategory, subSubcategory, titleName, newOption);
-                this.value = '';
-            }
-        }
     };
 }
 
@@ -546,6 +577,7 @@ let currentBooleanTerms = [];
 let currentModalCategory = null;
 let currentModalSubcategory = null;
 let currentModalSubSubcategory = null;
+let currentModalTitleName = null;
 
 function openAddBooleanSearchModal(category, subcategory, subSubcategory = null) {
     currentModalCategory = category;
@@ -580,6 +612,29 @@ function handleBooleanSearchInputKeypress(event) {
     }
 }
 
+function handleBooleanOptionsInputKeypress(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const input = document.getElementById('booleanOptionsInput');
+        const term = input.value.trim();
+        
+        if (term) {
+            addBooleanOptionsTerm(term);
+            input.value = '';
+        }
+    }
+}
+
+function handleAddBooleanOptionsClick() {
+    const input = document.getElementById('booleanOptionsInput');
+    const term = input.value.trim();
+    
+    if (term) {
+        addBooleanOptionsTerm(term);
+        input.value = '';
+    }
+}
+
 function addBooleanTerm(term) {
     // Store the term without quotes - quotes will be added when inserted into search string
     let cleanTerm = term;
@@ -594,9 +649,94 @@ function addBooleanTerm(term) {
     }
 }
 
+function addBooleanOptionsTerm(term) {
+    // Store the term without quotes - quotes will be added when inserted into search string
+    let cleanTerm = term;
+    // Remove quotes if they exist
+    if (term.startsWith('"') && term.endsWith('"')) {
+        cleanTerm = term.slice(1, -1);
+    }
+    
+    if (cleanTerm && !currentBooleanTerms.includes(cleanTerm)) {
+        currentBooleanTerms.push(cleanTerm);
+        renderBooleanOptionsTermsList();
+        
+        // Update the data structure
+        if (currentModalCategory === 'Domain') {
+            if (!categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][currentModalTitleName]) {
+                categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][currentModalTitleName] = [];
+            }
+            categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+            saveData();
+        } else if (currentModalCategory === 'Industry') {
+            if (!categoryData['Industry'][currentModalSubcategory][currentModalTitleName]) {
+                categoryData['Industry'][currentModalSubcategory][currentModalTitleName] = [];
+            }
+            categoryData['Industry'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+            saveData();
+        } else if (currentModalCategory === 'Context') {
+            if (!categoryData['Context'][currentModalSubcategory][currentModalTitleName]) {
+                categoryData['Context'][currentModalSubcategory][currentModalTitleName] = [];
+            }
+            categoryData['Context'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+            saveData();
+        } else if (currentModalCategory === 'Certifications & Clearances') {
+            if (!categoryData['Certifications & Clearances'][currentModalSubcategory][currentModalTitleName]) {
+                categoryData['Certifications & Clearances'][currentModalSubcategory][currentModalTitleName] = [];
+            }
+            categoryData['Certifications & Clearances'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+            saveData();
+        } else if (currentModalCategory === 'Titles') {
+            if (!categoryData['Titles'][currentModalSubcategory][currentModalTitleName]) {
+                categoryData['Titles'][currentModalSubcategory][currentModalTitleName] = [];
+            }
+            categoryData['Titles'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+            saveData();
+        }
+    }
+}
+
 function removeBooleanTerm(term) {
     currentBooleanTerms = currentBooleanTerms.filter(t => t !== term);
     renderBooleanTermsList();
+}
+
+function removeBooleanOptionsTerm(term) {
+    currentBooleanTerms = currentBooleanTerms.filter(t => t !== term);
+    renderBooleanOptionsTermsList();
+    
+    // Update the data structure
+    if (currentModalCategory === 'Domain') {
+        if (!categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][currentModalTitleName]) {
+            categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][currentModalTitleName] = [];
+        }
+        categoryData['Domain'][currentModalSubcategory][currentModalSubSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+        saveData();
+    } else if (currentModalCategory === 'Industry') {
+        if (!categoryData['Industry'][currentModalSubcategory][currentModalTitleName]) {
+            categoryData['Industry'][currentModalSubcategory][currentModalTitleName] = [];
+        }
+        categoryData['Industry'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+        saveData();
+    } else if (currentModalCategory === 'Context') {
+        if (!categoryData['Context'][currentModalSubcategory][currentModalTitleName]) {
+            categoryData['Context'][currentModalSubcategory][currentModalTitleName] = [];
+        }
+        categoryData['Context'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+        saveData();
+    } else if (currentModalCategory === 'Certifications & Clearances') {
+        if (!categoryData['Certifications & Clearances'][currentModalSubcategory][currentModalTitleName]) {
+            categoryData['Certifications & Clearances'][currentModalSubcategory][currentModalTitleName] = [];
+        }
+        categoryData['Certifications & Clearances'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+        saveData();
+    } else if (currentModalCategory === 'Titles') {
+        if (!categoryData['Titles'][currentModalSubcategory][currentModalTitleName]) {
+            categoryData['Titles'][currentModalSubcategory][currentModalTitleName] = [];
+        }
+        categoryData['Titles'][currentModalSubcategory][currentModalTitleName] = [...currentBooleanTerms];
+        saveData();
+    }
 }
 
 function renderBooleanTermsList() {
@@ -605,6 +745,22 @@ function renderBooleanTermsList() {
         <div class="boolean-term-chip">
             ${term}
             <button class="remove-term" onclick="removeBooleanTerm('${term}')">&times;</button>
+        </div>
+    `).join('');
+}
+
+function renderBooleanOptionsTermsList() {
+    const container = document.getElementById('booleanOptionsTermsList');
+    
+    if (!container) {
+        console.error('booleanOptionsTermsList container not found!');
+        return;
+    }
+    
+    container.innerHTML = currentBooleanTerms.map(term => `
+        <div class="boolean-term-chip">
+            ${term}
+            <button class="remove-term" onclick="removeBooleanOptionsTerm('${term}')">&times;</button>
         </div>
     `).join('');
 }
@@ -1162,12 +1318,37 @@ async function saveTitle() {
 }
 
 function openTitleDetailsModal(subcategory, titleName) {
-    document.getElementById('titleDetailsHeader').textContent = 'Title Details';
+    const booleanOptions = categoryData['Titles'][subcategory][titleName] || [];
+    
+    document.getElementById('titleDetailsHeader').textContent = 'Boolean Search Details';
     document.getElementById('selectedTitleName').textContent = titleName;
     document.getElementById('selectedTitleName').setAttribute('data-original-title', titleName);
     document.getElementById('selectedTitleName').setAttribute('data-subcategory', subcategory);
     
+    // Initialize the current boolean terms for this modal
+    currentBooleanTerms = [...booleanOptions];
+    currentModalCategory = 'Titles';
+    currentModalSubcategory = subcategory;
+    currentModalSubSubcategory = null;
+    currentModalTitleName = titleName;
+    
+    // Render the existing terms
+    renderBooleanOptionsTermsList();
+    
+    document.getElementById('booleanOptionsInput').value = '';
     document.getElementById('titleDetailsModal').style.display = 'block';
+    
+    // Add input event listener to enable/disable the Add button
+    const input = document.getElementById('booleanOptionsInput');
+    const addButton = document.getElementById('addBooleanOptionsBtn');
+    
+    // Use oninput to avoid multiple event listeners
+    input.oninput = function() {
+        addButton.disabled = !this.value.trim();
+    };
+    
+    // Initially disable the button
+    addButton.disabled = true;
     
     // Add click event to make title editable
     const titleElement = document.getElementById('selectedTitleName');
@@ -1178,6 +1359,11 @@ function openTitleDetailsModal(subcategory, titleName) {
 
 function closeTitleDetailsModal() {
     document.getElementById('titleDetailsModal').style.display = 'none';
+    
+    // Re-render the main category view to show updated Boolean terms
+    if (selectedCategory) {
+        renderCategoryView();
+    }
 }
 
 
@@ -1247,16 +1433,30 @@ function openIndustryDetailsModal(subcategory, titleName) {
     document.getElementById('selectedTitleName').setAttribute('data-subcategory', subcategory);
     document.getElementById('selectedTitleName').removeAttribute('data-sub-subcategory');
     
-    const existingOptions = document.getElementById('existingBooleanOptions');
-    existingOptions.innerHTML = booleanOptions.map(option => `
-        <div class="boolean-option-item">
-            <span>${option}</span>
-            <button class="delete-btn" onclick="removeBooleanOptionFromIndustry('${subcategory}', '${titleName}', '${option}')">Delete</button>
-        </div>
-    `).join('');
+    // Initialize the current boolean terms for this modal
+    currentBooleanTerms = [...booleanOptions];
+    currentModalCategory = 'Industry';
+    currentModalSubcategory = subcategory;
+    currentModalSubSubcategory = null;
+    currentModalTitleName = titleName;
     
-    document.getElementById('newBooleanOption').value = '';
+    // Render the existing terms
+    renderBooleanOptionsTermsList();
+    
+    document.getElementById('booleanOptionsInput').value = '';
     document.getElementById('titleDetailsModal').style.display = 'block';
+    
+    // Add input event listener to enable/disable the Add button
+    const input = document.getElementById('booleanOptionsInput');
+    const addButton = document.getElementById('addBooleanOptionsBtn');
+    
+    // Use oninput to avoid multiple event listeners
+    input.oninput = function() {
+        addButton.disabled = !this.value.trim();
+    };
+    
+    // Initially disable the button
+    addButton.disabled = true;
     
     // Add click event to make title editable
     const titleElement = document.getElementById('selectedTitleName');
@@ -1303,21 +1503,35 @@ function openAddContextModal(subcategory) {
 function openContextDetailsModal(subcategory, titleName) {
     const booleanOptions = categoryData['Context'][subcategory][titleName] || [];
     
-    document.getElementById('titleDetailsHeader').textContent = 'Context Details';
+    document.getElementById('titleDetailsHeader').textContent = 'Boolean Search Details';
     document.getElementById('selectedTitleName').textContent = titleName;
     document.getElementById('selectedTitleName').setAttribute('data-original-title', titleName);
     document.getElementById('selectedTitleName').setAttribute('data-subcategory', subcategory);
     
-    const existingOptions = document.getElementById('existingBooleanOptions');
-    existingOptions.innerHTML = booleanOptions.map(option => `
-        <div class="boolean-option-item">
-            <span>${option}</span>
-            <button class="delete-btn" onclick="removeBooleanOptionFromContext('${subcategory}', '${titleName}', '${option}')">Delete</button>
-        </div>
-    `).join('');
+    // Initialize the current boolean terms for this modal
+    currentBooleanTerms = [...booleanOptions];
+    currentModalCategory = 'Context';
+    currentModalSubcategory = subcategory;
+    currentModalSubSubcategory = null;
+    currentModalTitleName = titleName;
     
-    document.getElementById('newBooleanOption').value = '';
+    // Render the existing terms
+    renderBooleanOptionsTermsList();
+    
+    document.getElementById('booleanOptionsInput').value = '';
     document.getElementById('titleDetailsModal').style.display = 'block';
+    
+    // Add input event listener to enable/disable the Add button
+    const input = document.getElementById('booleanOptionsInput');
+    const addButton = document.getElementById('addBooleanOptionsBtn');
+    
+    // Use oninput to avoid multiple event listeners
+    input.oninput = function() {
+        addButton.disabled = !this.value.trim();
+    };
+    
+    // Initially disable the button
+    addButton.disabled = true;
     
     // Add click event to make title editable
     const titleElement = document.getElementById('selectedTitleName');
@@ -1365,21 +1579,35 @@ function openAddCertificationsModal(subcategory) {
 function openCertificationsDetailsModal(subcategory, titleName) {
     const booleanOptions = categoryData['Certifications & Clearances'][subcategory][titleName] || [];
     
-    document.getElementById('titleDetailsHeader').textContent = 'Certification Details';
+    document.getElementById('titleDetailsHeader').textContent = 'Boolean Search Details';
     document.getElementById('selectedTitleName').textContent = titleName;
     document.getElementById('selectedTitleName').setAttribute('data-original-title', titleName);
     document.getElementById('selectedTitleName').setAttribute('data-subcategory', subcategory);
     
-    const existingOptions = document.getElementById('existingBooleanOptions');
-    existingOptions.innerHTML = booleanOptions.map(option => `
-        <div class="boolean-option-item">
-            <span>${option}</span>
-            <button class="delete-btn" onclick="removeBooleanOptionFromCertifications('${subcategory}', '${titleName}', '${option}')">Delete</button>
-        </div>
-    `).join('');
+    // Initialize the current boolean terms for this modal
+    currentBooleanTerms = [...booleanOptions];
+    currentModalCategory = 'Certifications & Clearances';
+    currentModalSubcategory = subcategory;
+    currentModalSubSubcategory = null;
+    currentModalTitleName = titleName;
     
-    document.getElementById('newBooleanOption').value = '';
+    // Render the existing terms
+    renderBooleanOptionsTermsList();
+    
+    document.getElementById('booleanOptionsInput').value = '';
     document.getElementById('titleDetailsModal').style.display = 'block';
+    
+    // Add input event listener to enable/disable the Add button
+    const input = document.getElementById('booleanOptionsInput');
+    const addButton = document.getElementById('addBooleanOptionsBtn');
+    
+    // Use oninput to avoid multiple event listeners
+    input.oninput = function() {
+        addButton.disabled = !this.value.trim();
+    };
+    
+    // Initially disable the button
+    addButton.disabled = true;
     
     // Add click event to make title editable
     const titleElement = document.getElementById('selectedTitleName');
@@ -1964,17 +2192,20 @@ function renderKeywordSelector() {
 }
 
 function renderCategoryBooleanSearches(container, categoryKey) {
-    // Get the current data from localStorage
-    const savedData = localStorage.getItem('pluginData');
+    // Get the current data from localStorage for the current user
+    const userId = currentUser ? currentUser.uid : 'guest';
+    const storageKey = `pluginData_${userId}`;
+    const savedData = localStorage.getItem(storageKey);
+    
     if (!savedData) {
-        console.log('No data found in localStorage');
+        console.log('No data found in localStorage for user:', userId);
         // Show default subcategories even if no data exists
         renderDefaultSubcategories(container, categoryKey);
         return;
     }
     
     const data = JSON.parse(savedData);
-    console.log('Loaded data:', data);
+    console.log('Loaded data for user:', userId, data);
     
     const categoryData = data.categoryData;
     
@@ -2217,18 +2448,20 @@ function renderDefaultSubcategories(container, categoryKey) {
 }
 
 function getBooleanSearchesFromSubcategory(categoryKey, subcategory) {
-    // Get the current data from localStorage
-    const savedData = localStorage.getItem('pluginData');
+    // Get the current data from localStorage for the current user
+    const userId = currentUser ? currentUser.uid : 'guest';
+    const storageKey = `pluginData_${userId}`;
+    const savedData = localStorage.getItem(storageKey);
     console.log('getBooleanSearchesFromSubcategory called with:', categoryKey, subcategory);
-    console.log('savedData exists:', !!savedData);
+    console.log('savedData exists for user:', userId, !!savedData);
     
     if (!savedData) {
-        console.log('No saved data found');
+        console.log('No saved data found for user:', userId);
         return [];
     }
     
     const data = JSON.parse(savedData);
-    console.log('Parsed data:', data);
+    console.log('Parsed data for user:', userId, data);
     
     const categoryData = data.categoryData;
     console.log('categoryData:', categoryData);
@@ -2319,29 +2552,19 @@ function selectAllCategorySearches(categoryKey) {
 }
 
 function saveSelectedKeywords() {
-    // Start with existing selections
-    const existingSelections = currentRole ? (currentRole.selectedBooleanSearches || []) : [];
-    const existingSelectionIds = new Set(existingSelections.map(search => JSON.stringify(search)));
+    // Get ALL checkboxes (both checked and unchecked)
+    const allCheckboxes = document.querySelectorAll('.keyword-checkbox-item input[type="checkbox"]');
+    const selectedSearches = [];
     
-    // Get newly selected checkboxes
-    const checkboxes = document.querySelectorAll('.keyword-checkbox-item input[type="checkbox"]:checked');
-    const newSelections = [];
-    
-    checkboxes.forEach(checkbox => {
-        const searchData = JSON.parse(checkbox.dataset.searchData);
-        const searchId = JSON.stringify(searchData);
-        
-        // Only add if it's not already in existing selections
-        if (!existingSelectionIds.has(searchId)) {
-            newSelections.push(searchData);
+    allCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const searchData = JSON.parse(checkbox.dataset.searchData);
+            selectedSearches.push(searchData);
         }
     });
     
-    // Combine existing and new selections
-    const allSelections = [...existingSelections, ...newSelections];
-    
     if (currentRole) {
-        currentRole.selectedBooleanSearches = allSelections;
+        currentRole.selectedBooleanSearches = selectedSearches;
         saveData();
     }
     
@@ -3654,6 +3877,8 @@ function toggleSavedSearch(searchString) {
         console.log('Added to saved searches:', searchString);
     }
     
+    console.log('Current saved searches count:', savedSearches.length);
+    
     saveData();
     renderRecentlyUsedSearches();
     renderSavedSearches();
@@ -4050,8 +4275,14 @@ function deleteTraining(index) {
 
 // Data persistence
 function saveData() {
+    // Only save data for authenticated users, not guests
+    if (!currentUser || currentUser.isAnonymous) {
+        console.log('Guest user - data not saved');
+        return Promise.resolve();
+    }
+    
     // Get current user ID for user-specific storage
-    const userId = currentUser ? currentUser.uid : 'guest';
+    const userId = currentUser.uid;
     const storageKey = `pluginData_${userId}`;
     
     const data = {
@@ -4061,6 +4292,7 @@ function saveData() {
         recentlyUsedSearches: recentlyUsedSearches,
         savedSearches: savedSearches,
         roles: roles,
+        tempKeywords: tempKeywords,
         lastSaved: new Date().toISOString(),
         userId: userId
     };
@@ -4068,10 +4300,14 @@ function saveData() {
     try {
         localStorage.setItem(storageKey, JSON.stringify(data));
         console.log(`Data saved successfully for user ${userId} at:`, new Date().toLocaleString());
+        console.log('Saved searches count:', savedSearches.length);
+        console.log('Temp keywords count:', tempKeywords.length);
         updateDataStatus();
+        return Promise.resolve();
     } catch (error) {
         console.error('Error saving data:', error);
         showCustomAlert('Save Warning', 'Warning: Could not save data to localStorage. Your data may not be preserved.');
+        return Promise.reject(error);
     }
 }
 
@@ -4099,6 +4335,11 @@ function exportData() {
         exportedBy: userDisplay,
         userId: userId
     };
+    
+    // Only include tempKeywords for logged-in users, not guests
+    if (currentUser && !currentUser.isAnonymous) {
+        data.tempKeywords = tempKeywords;
+    }
     
     const dataStr = JSON.stringify(data, null, 2);
     const dataBlob = new Blob([dataStr], {type: 'application/json'});
@@ -4131,6 +4372,11 @@ function importData() {
                         categories = importedData.categories;
                         categoryData = importedData.categoryData;
                         trainingContent = importedData.trainingContent || [];
+                        
+                        // Import tempKeywords for logged-in users only
+                        if (currentUser && !currentUser.isAnonymous && importedData.tempKeywords) {
+                            tempKeywords = importedData.tempKeywords;
+                        }
                         
                         saveData();
                         renderAll();
@@ -4281,17 +4527,36 @@ function forceReload() {
     console.log('Reload complete. Current categoryData:', categoryData);
 }
 
-function loadData() {
+function loadData(user = currentUser) {
+    // For guest users, always start with fresh data
+    if (!user || user.isAnonymous) {
+        console.log('Guest user - loading fresh data');
+        initializeDefaultData();
+        return;
+    }
+    
     // Get current user ID for user-specific storage
-    const userId = currentUser ? currentUser.uid : 'guest';
+    const userId = user.uid;
     const storageKey = `pluginData_${userId}`;
     
     console.log(`Loading data for user: ${userId}`);
+    console.log(`Storage key: ${storageKey}`);
     
     const savedData = localStorage.getItem(storageKey);
+    console.log('Found saved data:', savedData ? 'YES' : 'NO');
+    
     if (savedData) {
         try {
             const data = JSON.parse(savedData);
+            console.log('Parsed data keys:', Object.keys(data));
+            
+            // Validate that the data belongs to the current user
+            if (data.userId && data.userId !== userId) {
+                console.warn('Data user ID mismatch, clearing data for security');
+                clearAllDataFromMemory();
+                return;
+            }
+            
             categories = data.categories || {
                 primary: ['Titles', 'Domain', 'Industry'],
                 secondary: ['Context', 'Certifications & Clearances']
@@ -4380,10 +4645,15 @@ function loadData() {
             
             trainingContent = data.trainingContent || [];
             recentlyUsedSearches = data.recentlyUsedSearches || [];
-        savedSearches = data.savedSearches || [];
+            savedSearches = data.savedSearches || [];
             roles = data.roles || [];
             
+            // Load tempKeywords for authenticated users
+            tempKeywords = data.tempKeywords || [];
+            
             console.log('Data loaded successfully:', categoryData);
+            console.log('Saved searches loaded:', savedSearches.length, 'items');
+            console.log('Temp keywords loaded:', tempKeywords.length, 'items');
         } catch (error) {
             console.error('Error loading data:', error);
             // If there's an error, initialize with default data
@@ -4436,6 +4706,7 @@ function initializeDefaultData() {
         }
     };
     trainingContent = [];
+    tempKeywords = []; // Reset temp keywords for all users
 }
 
 // Role Filter Functionality
@@ -4499,7 +4770,6 @@ function filterRolesByCriteria(roles) {
 
 
 // Temporary keyword pool functionality
-let tempKeywords = [];
 
 function setupTempKeywordPool() {
     console.log('Setting up temp keyword pool...');
@@ -4511,72 +4781,72 @@ function setupTempKeywordPool() {
 
     console.log('Found elements:', { addBtn, input, clearBtn, addAllBtn, tempKeywordsList });
 
-    // Add keyword button event
-    if (addBtn) {
-        console.log('Adding click event to add button');
-        addBtn.addEventListener('click', addTempKeyword);
-    } else {
-        console.log('Add button not found!');
+    // Check if all required elements exist
+    if (!addBtn || !input || !clearBtn || !addAllBtn || !tempKeywordsList) {
+        console.log('Some elements not found, retrying in 100ms...');
+        setTimeout(setupTempKeywordPool, 100);
+        return;
     }
+
+    // Remove existing event listeners to prevent duplicates
+    const newAddBtn = addBtn.cloneNode(true);
+    const newInput = input.cloneNode(true);
+    const newClearBtn = clearBtn.cloneNode(true);
+    const newAddAllBtn = addAllBtn.cloneNode(true);
+    const newTempKeywordsList = tempKeywordsList.cloneNode(true);
+    
+    addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+    input.parentNode.replaceChild(newInput, input);
+    clearBtn.parentNode.replaceChild(newClearBtn, clearBtn);
+    addAllBtn.parentNode.replaceChild(newAddAllBtn, addAllBtn);
+    tempKeywordsList.parentNode.replaceChild(newTempKeywordsList, tempKeywordsList);
+
+    // Add keyword button event
+    console.log('Adding click event to add button');
+    newAddBtn.addEventListener('click', addTempKeyword);
 
     // Enter key in input field
-    if (input) {
-        console.log('Adding keypress event to input');
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                console.log('Enter key pressed');
-                addTempKeyword();
-            }
-        });
-    } else {
-        console.log('Input field not found!');
-    }
+    console.log('Adding keypress event to input');
+    newInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            console.log('Enter key pressed');
+            addTempKeyword();
+        }
+    });
 
     // Clear all button
-    if (clearBtn) {
-        console.log('Adding click event to clear button');
-        clearBtn.addEventListener('click', clearTempKeywords);
-    } else {
-        console.log('Clear button not found!');
-    }
+    console.log('Adding click event to clear button');
+    newClearBtn.addEventListener('click', clearTempKeywords);
 
     // Add all to boolean button
-    if (addAllBtn) {
-        console.log('Adding click event to add all button');
-        addAllBtn.addEventListener('click', function() {
-            console.log('Add all button clicked!');
-            addTempToBoolean();
-        });
-    } else {
-        console.log('Add all button not found!');
-    }
+    console.log('Adding click event to add all button');
+    newAddAllBtn.addEventListener('click', function() {
+        console.log('Add all button clicked!');
+        addTempToBoolean();
+    });
 
     // Event delegation for temp keywords list
-    if (tempKeywordsList) {
-        console.log('Adding click event to temp keywords list');
-        tempKeywordsList.addEventListener('click', function(e) {
-            const target = e.target;
-            
-            // Handle keyword click (add to boolean search)
-            if (target.classList.contains('temp-keyword-text')) {
-                const keyword = target.textContent;
-                console.log('Temp keyword clicked:', keyword);
-                // Use insertAtCursor like the keyword selector does
-                insertAtCursor(keyword);
+    console.log('Adding click event to temp keywords list');
+    newTempKeywordsList.addEventListener('click', function(e) {
+        const target = e.target;
+        
+        // Handle keyword click (add to boolean search)
+        if (target.classList.contains('temp-keyword-text')) {
+            const keyword = target.textContent;
+            console.log('Temp keyword clicked:', keyword);
+            // Use insertAtCursor like the keyword selector does
+            insertAtCursor(keyword);
+        }
+        
+        // Handle remove button click
+        if (target.classList.contains('remove-temp-keyword-btn')) {
+            const keywordItem = target.closest('.temp-keyword-item');
+            if (keywordItem) {
+                const keyword = keywordItem.querySelector('.temp-keyword-text').textContent;
+                removeTempKeyword(keyword);
             }
-            
-            // Handle remove button click
-            if (target.classList.contains('remove-temp-keyword-btn')) {
-                const keywordItem = target.closest('.temp-keyword-item');
-                if (keywordItem) {
-                    const keyword = keywordItem.querySelector('.temp-keyword-text').textContent;
-                    removeTempKeyword(keyword);
-                }
-            }
-        });
-    } else {
-        console.log('Temp keywords list not found!');
-    }
+        }
+    });
 
     renderTempKeywords();
 }
@@ -4601,13 +4871,34 @@ function addTempKeyword() {
             tempKeywords.push(quotedKeyword);
             console.log('Current tempKeywords:', tempKeywords);
             renderTempKeywords();
+            
+            // Save data for logged-in users only
+            if (currentUser && !currentUser.isAnonymous) {
+                saveData();
+            }
+            
+            // Provide visual feedback
+            input.style.borderColor = '#28a745';
+            setTimeout(() => {
+                input.style.borderColor = '';
+            }, 500);
         } else {
             console.log('Keyword already exists in tempKeywords');
+            // Provide visual feedback for duplicate
+            input.style.borderColor = '#ffc107';
+            setTimeout(() => {
+                input.style.borderColor = '';
+            }, 500);
         }
         
         input.value = '';
     } else {
         console.log('No keyword entered');
+        // Provide visual feedback for empty input
+        input.style.borderColor = '#dc3545';
+        setTimeout(() => {
+            input.style.borderColor = '';
+        }, 500);
     }
 }
 
@@ -4616,12 +4907,22 @@ function removeTempKeyword(keyword) {
     if (index > -1) {
         tempKeywords.splice(index, 1);
         renderTempKeywords();
+        
+        // Save data for logged-in users only
+        if (currentUser && !currentUser.isAnonymous) {
+            saveData();
+        }
     }
 }
 
 function clearTempKeywords() {
     tempKeywords = [];
     renderTempKeywords();
+    
+    // Save data for logged-in users only
+    if (currentUser && !currentUser.isAnonymous) {
+        saveData();
+    }
 }
 
 function addTempKeywordToBoolean(keyword) {
@@ -4690,9 +4991,26 @@ function addTempToBoolean() {
 
 function renderTempKeywords() {
     const tempKeywordsList = document.getElementById('tempKeywordsList');
-    if (!tempKeywordsList) return;
+    if (!tempKeywordsList) {
+        console.log('tempKeywordsList element not found in renderTempKeywords');
+        return;
+    }
 
+    console.log('Rendering temp keywords:', tempKeywords);
     tempKeywordsList.innerHTML = '';
+    
+    if (tempKeywords.length === 0) {
+        // Show a placeholder message when no keywords
+        let placeholderMessage = 'No temporary keywords added yet.';
+        
+        // Add note for guest users that keywords won't be saved
+        if (!currentUser || currentUser.isAnonymous) {
+            placeholderMessage += ' (Keywords will not be saved for guest users)';
+        }
+        
+        tempKeywordsList.innerHTML = `<p style="color: #7f8c8d; font-style: italic; margin: 0; padding: 8px;">${placeholderMessage}</p>`;
+        return;
+    }
     
     tempKeywords.forEach(keyword => {
         const keywordItem = document.createElement('div');
@@ -4703,6 +5021,8 @@ function renderTempKeywords() {
         `;
         tempKeywordsList.appendChild(keywordItem);
     });
+    
+    console.log('Rendered', tempKeywords.length, 'temp keywords');
 }
 
 // Error threshold modal system
@@ -4896,53 +5216,41 @@ async function signInWithGoogle() {
 }
 
 async function signInAsGuest() {
-    console.log('Starting instant guest sign-in...');
+    console.log('Starting guest sign-in...');
     
-    // Immediately show the app and create a fake guest user
-    const fakeGuestUser = {
-        uid: 'guest_' + Date.now(),
-        isAnonymous: true,
-        email: null,
-        displayName: 'Guest User'
-    };
-    
-    // Set guest session flag immediately
+    // Set guest session flag
     sessionStorage.setItem('guestSessionStarted', 'true');
-    console.log('Guest session started immediately');
     
-    // Update UI immediately
-    updateAuthUI(fakeGuestUser);
-    
-    // Handle Firebase auth in background (non-blocking)
-    try {
-        if (firebase.auth) {
-            console.log('Attempting Firebase anonymous sign-in in background...');
-            const result = await firebase.auth().signInAnonymously();
-            console.log('Firebase guest sign-in successful:', result.user.uid);
-            
-            // Update with real Firebase user
-            updateAuthUI(result.user);
-        }
-    } catch (error) {
-        console.error('Firebase guest sign-in error:', error);
-        // Don't show error to user since they're already signed in
-    }
+    // Sign in as anonymous user
+    await firebase.auth().signInAnonymously();
+    console.log('Guest sign-in successful');
 }
 
 // Email auth functions removed - Google or Guest only
 
 async function logout() {
     try {
+        // Save current data before logout (if user is authenticated)
+        if (currentUser && !currentUser.isAnonymous) {
+            console.log('Saving data before logout...');
+            await saveData();
+            console.log('Data saved successfully before logout');
+        }
+        
         await firebase.auth().signOut();
         // Clear guest session flag on logout
         sessionStorage.removeItem('guestSessionStarted');
-        showAuthGateway();
         
-        // Refresh the page after logout
-        console.log('Logout successful, refreshing page...');
-        setTimeout(() => {
-            window.location.reload();
-        }, 500); // Small delay to ensure auth state is updated
+        // Clear current user data from memory
+        currentUser = null;
+        
+        // Clear all data from memory to prevent data leakage
+        clearAllDataFromMemory();
+        
+        console.log('Logout successful - all data cleared from memory');
+        
+        // Show auth gateway
+        showAuthGateway();
         
     } catch (error) {
         console.error('Logout error:', error);
@@ -5015,6 +5323,17 @@ function updateAuthUI(user) {
 firebase.auth().onAuthStateChanged(function(user) {
     console.log('Auth state changed:', user ? 'User authenticated' : 'No user');
     
+    // Check if user has changed
+    const previousUserId = sessionStorage.getItem('currentUserId');
+    const currentUserId = user ? user.uid : null;
+    
+    // Clear data when switching between different user types
+    if (previousUserId && previousUserId !== currentUserId) {
+        console.log('User changed from', previousUserId, 'to', currentUserId);
+        // Clear all data from memory when user changes
+        clearAllDataFromMemory();
+    }
+    
     if (user && user.isAnonymous) {
         // Check if this is a page refresh for a guest user
         const isPageRefresh = !sessionStorage.getItem('guestSessionStarted');
@@ -5025,6 +5344,27 @@ firebase.auth().onAuthStateChanged(function(user) {
             firebase.auth().signOut();
             return;
         }
+        
+        // For guest users, ensure we start with fresh data
+        console.log('Guest user detected, ensuring fresh data...');
+        clearAllDataFromMemory();
+        
+        // Clear only guest-related localStorage data to prevent data leakage
+        console.log('Clearing guest-related localStorage data...');
+        const guestStorageKey = `pluginData_${user.uid}`;
+        localStorage.removeItem(guestStorageKey);
+        console.log('Removed guest localStorage key:', guestStorageKey);
+        
+        // Force a complete reset for guest users
+        console.log('Forcing complete reset for guest user...');
+        initializeDefaultData();
+    }
+    
+    // Update session storage with current user ID
+    if (user) {
+        sessionStorage.setItem('currentUserId', user.uid);
+    } else {
+        sessionStorage.removeItem('currentUserId');
     }
     
     // Update UI first
@@ -5034,13 +5374,28 @@ firebase.auth().onAuthStateChanged(function(user) {
     if (user) {
         try {
             console.log('Setting up app components...');
-            loadData();
+            
+            // Only load data for non-guest users
+            if (!user.isAnonymous) {
+                loadData(user);
+            } else {
+                console.log('Guest user - skipping loadData()');
+            }
+            
             setupNavigation();
             setupStorageSection();
             setupBuilderSection();
             setupTrainerSection();
             setupKeyboardShortcuts();
             renderAll();
+            
+            // Setup temp keyword pool if Builder section is active
+            const builderSection = document.getElementById('builder');
+            if (builderSection && builderSection.classList.contains('active')) {
+                console.log('Builder section is active, setting up temp keyword pool...');
+                setupTempKeywordPool();
+            }
+            
             console.log('App setup complete');
         } catch (error) {
             console.error('Error setting up app:', error);
@@ -5053,3 +5408,22 @@ firebase.auth().onAuthStateChanged(function(user) {
         }
     }
 });
+
+// Function to clear all data from memory
+function clearAllDataFromMemory() {
+    console.log('Clearing all data from memory...');
+    categories = {
+        primary: ['Titles', 'Domain', 'Industry'],
+        secondary: ['Context', 'Certifications & Clearances']
+    };
+    categoryData = {};
+    trainingContent = [];
+    recentlyUsedSearches = [];
+    savedSearches = [];
+    roles = [];
+    tempKeywords = [];
+    
+    // Clear any cached data in session storage
+    sessionStorage.removeItem('cachedData');
+    console.log('Memory cleared successfully');
+}

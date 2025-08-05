@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOLD Boolean</title>
+    <link rel="icon" href="/gold-bullion-favicon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Authentication Gate -->
+    <div id="authGate" class="auth-gate">
+        <div class="auth-gate-content">
+            <div class="auth-logo-section">
+                <img src="/gold-bullion-favicon.png" alt="GOLD Boolean" class="auth-logo">
+                <h1 class="auth-title">
+                    <span class="gold-text">GOLD</span> <span class="bullion-text"><i>Boolean</i></span>
+                </h1>
+            </div>
+            <p class="auth-tagline">Recruit smarter. Build better strings.</p>
+            <div class="auth-options">
+                <button class="auth-btn google-btn">Sign in with Google</button>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <button class="auth-btn email-btn">📧 Sign in with Email</button>
+                <button class="auth-btn guest-btn">👤 Continue as Guest</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="mainApp" class="container" style="display: none;">
+        <header>
+            <div class="header-flex-inline">
+                <div class="header-main-inline">
+                    <h1 class="bullion-title">
+                        <span class="gold-text">GOLD</span> <span class="bullion-text"><i>Boolean</i></span>
+                    </h1>
+                    <nav>
+                        <button class="nav-btn active" data-section="storage">Storage</button>
+                        <button class="nav-btn bullion-btn" data-section="builder">Builder</button>
+                        <button class="nav-btn" data-section="trainer">Trainer</button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section id="storage" class="section active">
+                <h2>Storage</h2>
+                <p>Storage section content would go here.</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        console.log('Simple page loaded');
+        
+        // Simple test - show main app after 3 seconds
+        setTimeout(() => {
+            const authGate = document.getElementById('authGate');
+            const mainApp = document.getElementById('mainApp');
+            
+            if (authGate) authGate.classList.add('hidden');
+            if (mainApp) mainApp.classList.add('visible');
+            
+            console.log('Switched to main app');
+        }, 3000);
+    </script>
+</body>
+</html> 

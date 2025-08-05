@@ -280,20 +280,24 @@
     <div id="titleDetailsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="titleDetailsHeader">Title Details</h3>
+                <h3 id="titleDetailsHeader">Boolean Search Details</h3>
                 <span class="close" onclick="closeTitleDetailsModal()">&times;</span>
             </div>
             <div class="modal-body">
                 <div class="title-info">
                     <h4 id="selectedTitleName"></h4>
                 </div>
-                <div class="boolean-options-section">
-                    <h4>Boolean Options:</h4>
-                    <div id="existingBooleanOptions">
-                        <!-- Existing boolean options will be displayed here -->
+                <div class="form-group">
+                    <label for="booleanOptionsInput">Add New Boolean Terms:</label>
+                    <div class="input-button-container">
+                        <input type="text" id="booleanOptionsInput" placeholder="Enter search term and press Enter" onkeypress="handleBooleanOptionsInputKeypress(event)">
+                        <button id="addBooleanOptionsBtn" class="add-boolean-options-btn" onclick="handleAddBooleanOptionsClick()">Add</button>
                     </div>
-                    <div class="add-new-option">
-                        <input type="text" id="newBooleanOption" placeholder="Add new boolean option and press Enter">
+                </div>
+                <div class="boolean-terms-container">
+                    <h4>Boolean Terms:</h4>
+                    <div id="booleanOptionsTermsList" class="boolean-terms-list">
+                        <!-- Boolean terms will be displayed here -->
                     </div>
                 </div>
             </div>
