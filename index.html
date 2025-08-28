@@ -10,7 +10,7 @@
     <link rel="icon" href="/gold-bullion-favicon.png" type="image/png" />
             <link rel="stylesheet" href="styles.css?v=48">
             
-    <script src="script.js?v=15"></script>
+    <script src="builder.js"></script>
 </head>
 <body>
     <div class="container" id="appContainer">
@@ -21,8 +21,7 @@
                 <span class="gold-text">GOLD</span> <span class="bullion-text"><i>Boolean</i></span>
               </h1>
               <nav>
-                <button class="nav-btn active" data-section="storage">Storage</button>
-                <button class="nav-btn bullion-btn" data-section="builder">Builder</button>
+                <button class="nav-btn active" data-section="builder">Builder</button>
                 <button class="nav-btn" data-section="trainer">Trainer</button>
               </nav>
             </div>
@@ -47,30 +46,8 @@
         </header>
 
         <main>
-            <!-- Storage Section -->
-            <section id="storage" class="section active">
-                <h2>Storage</h2>
-                <div class="storage-container">
-                    <div class="categories-panel">
-                        <h3>Directory</h3>
-                        <div id="categoryList" class="category-list">
-                            <!-- Categories will be populated here -->
-                        </div>
-                    </div>
-                    
-                    <div class="keywords-panel">
-                        <div id="categoryView">
-                            <h3 id="currentCategoryTitle">Select a Category</h3>
-                            <div id="categoryContent">
-                                <p style="color: #7f8c8d; font-style: italic;">Click on a category to view and manage its items.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <!-- Role Dashboard Section -->
-            <section id="builder" class="section">
+            <section id="builder" class="section active">
                 <div id="roleDashboard" class="role-dashboard">
                     <div class="dashboard-header">
                         <h2>Role Management Dashboard</h2>
