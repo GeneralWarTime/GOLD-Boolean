@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="auth-gate">
+        <div class="auth-gate-content">
+            <div class="auth-logo-section">
+                <img src="/gold-bullion-favicon.png" alt="GOLD Boolean" class="auth-logo">
+                <h1 class="auth-title">
+                    <span class="gold-text">GOLD</span> <span class="bullion-text"><i>Boolean</i></span>
+                </h1>
+            </div>
+            <p class="auth-tagline">Recruit smarter. Build better strings.</p>
+            <div class="auth-options">
+                <button class="auth-btn google-btn">Sign in with Google</button>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <button class="auth-btn email-btn">📧 Sign in with Email</button>
+                <button class="auth-btn guest-btn">👤 Continue as Guest</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="mainApp" class="container" style="display: none;">
+        <h1>Main App Works!</h1>
+        <p>If you can see this, the basic HTML and CSS are working.</p>
+    </div>
+    
+    <script>
+        console.log('Test page loaded');
+        setTimeout(() => {
+            document.getElementById('mainApp').style.display = 'block';
+            document.querySelector('.auth-gate').style.display = 'none';
+        }, 2000);
+    </script>
+</body>
+</html> 

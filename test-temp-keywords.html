@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Temporary Keyword Pool Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 Temporary Keyword Pool Fix Test</h1>
+        
+        <div class="test-section">
+            <div class="test-title">✅ Fix Summary</div>
+            <div class="test-result success">
+                <strong>Issue Fixed:</strong> Temporary Keyword Pool not adding new keywords when pressing Enter or clicking Add button
+            </div>
+            <div class="test-result info">
+                <strong>Root Cause:</strong> Event listeners were not being properly attached due to timing issues with DOM element availability
+            </div>
+            <div class="test-result success">
+                <strong>Solution Implemented:</strong>
+                <ul>
+                    <li>Added retry mechanism in setupTempKeywordPool() function</li>
+                    <li>Setup now triggers when Builder section is activated</li>
+                    <li>Added element existence checks with 100ms retry delay</li>
+                    <li>Prevented duplicate event listeners with element cloning</li>
+                    <li>Added visual feedback for user interactions</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🧪 Test Instructions</div>
+            <div class="test-result info">
+                <ol>
+                    <li>Open the main application at <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></li>
+                    <li>Navigate to the "Builder" section</li>
+                    <li>Find the "Temporary Keyword Pool" section</li>
+                    <li>Type a keyword (e.g., "Test") in the input field</li>
+                    <li>Press Enter or click the "Add" button</li>
+                    <li>Verify the keyword appears below the input field</li>
+                    <li>Test adding multiple keywords</li>
+                    <li>Test clicking on keywords to add them to the boolean search</li>
+                    <li>Test the "Clear All" and "Add All to Search" buttons</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🔍 Technical Changes Made</div>
+            <div class="test-result info">
+                <strong>Files Modified:</strong>
+                <ul>
+                    <li><code>script.js</code> - Lines 4705-4891 (setupTempKeywordPool function)</li>
+                    <li><code>script.js</code> - Lines 166-200 (setupNavigation function)</li>
+                    <li><code>script.js</code> - Lines 4785-4820 (addTempKeyword function)</li>
+                    <li><code>script.js</code> - Lines 4892-4916 (renderTempKeywords function)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">🎯 Expected Behavior</div>
+            <div class="test-result success">
+                ✅ Keywords should be added immediately when pressing Enter or clicking Add<br>
+                ✅ Keywords should appear below the input field with remove buttons<br>
+                ✅ Clicking on keywords should add them to the boolean search<br>
+                ✅ "Clear All" should remove all temporary keywords<br>
+                ✅ "Add All to Search" should add all keywords to the boolean search<br>
+                ✅ Visual feedback (border color changes) for different actions<br>
+                ✅ Placeholder message when no keywords are present
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
