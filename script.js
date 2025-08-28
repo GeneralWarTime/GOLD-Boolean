@@ -10,29 +10,21 @@ let savedSearches = [];
 // Temporary keywords storage (user-specific, not for guests)
 let tempKeywords = [];
 
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyA0Sw8STec1LHuFN9_fxN7ni506TrD51hs",
-  authDomain: "boolean-gold.firebaseapp.com",
-  projectId: "boolean-gold",
-  storageBucket: "boolean-gold.firebasestorage.app",
-  messagingSenderId: "137254251529",
-  appId: "1:137254251529:web:ced755c0e98a7bb05a5cd8",
-  measurementId: "G-XR8356J2YE"
+// Local Authentication System
+console.log('Initializing local authentication system...');
+
+// Simple local user management
+let currentUser = {
+    uid: 'local-user-' + Date.now(),
+    name: 'Local User',
+    email: 'local@boolean.local',
+    isGuest: false
 };
 
-// Initialize Firebase
-console.log('Initializing Firebase...');
-firebase.initializeApp(firebaseConfig);
-console.log('Firebase initialized successfully');
-const analytics = firebase.analytics();
-const auth = firebase.auth();
-const db = firebase.firestore();
-console.log('Firebase services initialized');
+console.log('Local authentication system initialized');
 
 // Auth state management
-let currentUser = null;
-let isAuthenticated = false;
+let isAuthenticated = true; // Always authenticated in local mode
 
 let categoryData = {
     'Titles': {
@@ -5172,242 +5164,92 @@ function setupKeyboardShortcuts() {
     });
 }
 
-// Authentication Gateway Functions
-// Email auth removed - Google or Guest only
+// Local Authentication Functions (Firebase removed)
 
 async function signInWithGoogle() {
-    const googleBtn = document.querySelector('.google-auth-btn');
-    
-    try {
-        // Show loading state
-        if (googleBtn) {
-            googleBtn.innerHTML = '<span class="auth-icon">⏳</span><span class="auth-text">Signing in...</span>';
-            googleBtn.disabled = true;
-        }
-        
-        console.log('Starting Google sign-in...');
-        
-        // Check if Firebase is properly initialized
-        if (!firebase.auth) {
-            throw new Error('Firebase Auth not available');
-        }
-        
-        console.log('Creating Google provider...');
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        console.log('Google provider created with scopes:', provider.scopes);
-        
-        // Use signInWithPopup for better user experience
-        console.log('Attempting signInWithPopup...');
-        const result = await firebase.auth().signInWithPopup(provider);
-        console.log('Google sign-in successful:', result.user.email);
-        
-    } catch (error) {
-        console.error('Google sign-in error:', error);
-        showCustomAlert('Error', 'Google sign-in failed: ' + error.message);
-    } finally {
-        // Reset button state
-        if (googleBtn) {
-            googleBtn.innerHTML = '<span class="auth-icon">🔍</span><span class="auth-text">Sign in with Google</span>';
-            googleBtn.disabled = false;
-        }
-    }
+    // Local mode - no action needed
+    console.log('Local mode: Google sign-in not required');
 }
 
 async function signInAsGuest() {
-    console.log('Starting guest sign-in...');
-    
-    // Set guest session flag
-    sessionStorage.setItem('guestSessionStarted', 'true');
-    
-    // Sign in as anonymous user
-    await firebase.auth().signInAnonymously();
-    console.log('Guest sign-in successful');
+    // Local mode - no action needed
+    console.log('Local mode: Guest sign-in not required');
 }
 
-// Email auth functions removed - Google or Guest only
-
 async function logout() {
+    // Local mode - just clear data from memory
     try {
-        // Save current data before logout (if user is authenticated)
-        if (currentUser && !currentUser.isAnonymous) {
-            console.log('Saving data before logout...');
-            await saveData();
-            console.log('Data saved successfully before logout');
-        }
-        
-        await firebase.auth().signOut();
-        // Clear guest session flag on logout
-        sessionStorage.removeItem('guestSessionStarted');
-        
-        // Clear current user data from memory
-        currentUser = null;
-        
-        // Clear all data from memory to prevent data leakage
+        console.log('Clearing data from memory...');
         clearAllDataFromMemory();
+        console.log('Data cleared successfully');
         
-        console.log('Logout successful - all data cleared from memory');
-        
-        // Show auth gateway
-        showAuthGateway();
+        // Refresh the page to reset state
+        window.location.reload();
         
     } catch (error) {
         console.error('Logout error:', error);
-        showCustomAlert('Error', 'Failed to logout: ' + error.message);
+        showCustomAlert('Error', 'Failed to clear data: ' + error.message);
     }
-}
-
-function showAuthGateway() {
-    document.getElementById('authGateway').style.display = 'flex';
-    document.getElementById('appContainer').style.display = 'none';
-    isAuthenticated = false;
-}
-
-function showApp() {
-    document.getElementById('authGateway').style.display = 'none';
-    document.getElementById('appContainer').style.display = 'block';
-    isAuthenticated = true;
-    console.log('App is now visible and authenticated');
 }
 
 function updateAuthUI(user) {
     console.log('updateAuthUI called with user:', user);
     
-    if (user) {
-        // User is authenticated
-        currentUser = user;
-        showApp();
+    // In local mode, we're always authenticated
+    currentUser = user || currentUser;
+    
+    // Update user info display
+    const userInfo = document.getElementById('userInfo');
+    const userEmail = document.getElementById('userEmail');
+    
+    console.log('Found elements:', { userInfo: !!userInfo, userEmail: !!userEmail });
+    
+    if (userInfo && userEmail) {
+        // Show user info
+        userInfo.style.display = 'flex';
         
-        // Update user info display
-        const userInfo = document.getElementById('userInfo');
-        const userEmail = document.getElementById('userEmail');
-        
-        console.log('Found elements:', { userInfo: !!userInfo, userEmail: !!userEmail });
-        
-        if (userInfo && userEmail) {
-            // Show user info
-            userInfo.style.display = 'flex';
-            
-            // Display user information
-            if (user.isAnonymous) {
-                userEmail.textContent = '👤 Guest User';
-                console.log('Set user display to: Guest User');
-            } else if (user.email) {
-                // Extract username (everything before @ symbol)
-                const username = user.email.split('@')[0];
-                userEmail.textContent = `📧 ${username}`;
-                console.log('Set user display to:', username);
-            } else {
-                userEmail.textContent = '👤 Authenticated User';
-                console.log('Set user display to: Authenticated User');
-            }
-        } else {
-            console.error('Missing elements for user info display');
-        }
+        // Display local user information
+        userEmail.textContent = '👤 Local User';
+        console.log('Set user display to: Local User');
     } else {
-        // User is not authenticated
-        currentUser = null;
-        showAuthGateway();
-        
-        // Hide user info
-        const userInfo = document.getElementById('userInfo');
-        
-        if (userInfo) {
-            userInfo.style.display = 'none';
-        }
+        console.error('Missing elements for user info display');
     }
 }
 
-// Listen for auth state changes
-firebase.auth().onAuthStateChanged(function(user) {
-    console.log('Auth state changed:', user ? 'User authenticated' : 'No user');
+// Local app initialization (Firebase removed)
+console.log('Initializing local app...');
+
+// Set up the app immediately since we're always authenticated
+try {
+    console.log('Setting up app components...');
     
-    // Check if user has changed
-    const previousUserId = sessionStorage.getItem('currentUserId');
-    const currentUserId = user ? user.uid : null;
+    // Load data from localStorage
+    loadData(currentUser);
     
-    // Clear data when switching between different user types
-    if (previousUserId && previousUserId !== currentUserId) {
-        console.log('User changed from', previousUserId, 'to', currentUserId);
-        // Clear all data from memory when user changes
-        clearAllDataFromMemory();
+    setupNavigation();
+    setupStorageSection();
+    setupBuilderSection();
+    setupTrainerSection();
+    setupKeyboardShortcuts();
+    renderAll();
+    
+    // Setup temp keyword pool if Builder section is active
+    const builderSection = document.getElementById('builder');
+    if (builderSection && builderSection.classList.contains('active')) {
+        console.log('Builder section is active, setting up temp keyword pool...');
+        setupTempKeywordPool();
     }
     
-    if (user && user.isAnonymous) {
-        // Check if this is a page refresh for a guest user
-        const isPageRefresh = !sessionStorage.getItem('guestSessionStarted');
-        
-        if (isPageRefresh) {
-            // Guest user refreshed the page - log them out
-            console.log('Guest user refreshed page - logging out');
-            firebase.auth().signOut();
-            return;
-        }
-        
-        // For guest users, ensure we start with fresh data
-        console.log('Guest user detected, ensuring fresh data...');
-        clearAllDataFromMemory();
-        
-        // Clear only guest-related localStorage data to prevent data leakage
-        console.log('Clearing guest-related localStorage data...');
-        const guestStorageKey = `pluginData_${user.uid}`;
-        localStorage.removeItem(guestStorageKey);
-        console.log('Removed guest localStorage key:', guestStorageKey);
-        
-        // Force a complete reset for guest users
-        console.log('Forcing complete reset for guest user...');
-        initializeDefaultData();
+    console.log('App setup complete');
+} catch (error) {
+    console.error('Error setting up app:', error);
+    // Even if there's an error, ensure basic navigation works
+    try {
+        setupNavigation();
+    } catch (navError) {
+        console.error('Navigation setup failed:', navError);
     }
-    
-    // Update session storage with current user ID
-    if (user) {
-        sessionStorage.setItem('currentUserId', user.uid);
-    } else {
-        sessionStorage.removeItem('currentUserId');
-    }
-    
-    // Update UI first
-    updateAuthUI(user);
-    
-    // If user is authenticated, set up the app
-    if (user) {
-        try {
-            console.log('Setting up app components...');
-            
-            // Only load data for non-guest users
-            if (!user.isAnonymous) {
-                loadData(user);
-            } else {
-                console.log('Guest user - skipping loadData()');
-            }
-            
-            setupNavigation();
-            setupStorageSection();
-            setupBuilderSection();
-            setupTrainerSection();
-            setupKeyboardShortcuts();
-            renderAll();
-            
-            // Setup temp keyword pool if Builder section is active
-            const builderSection = document.getElementById('builder');
-            if (builderSection && builderSection.classList.contains('active')) {
-                console.log('Builder section is active, setting up temp keyword pool...');
-                setupTempKeywordPool();
-            }
-            
-            console.log('App setup complete');
-        } catch (error) {
-            console.error('Error setting up app:', error);
-            // Even if there's an error, ensure basic navigation works
-            try {
-                setupNavigation();
-            } catch (navError) {
-                console.error('Navigation setup failed:', navError);
-            }
-        }
-    }
-});
+}
 
 // Function to clear all data from memory
 function clearAllDataFromMemory() {

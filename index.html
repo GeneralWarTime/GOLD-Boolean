@@ -9,50 +9,11 @@
     <title>GOLD Boolean</title>
     <link rel="icon" href="/gold-bullion-favicon.png" type="image/png" />
             <link rel="stylesheet" href="styles.css?v=48">
-                <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+            
     <script src="script.js?v=15"></script>
 </head>
 <body>
-    <!-- Authentication Gateway Screen -->
-    <div id="authGateway" class="auth-gateway">
-        <div class="auth-gateway-content">
-            <div class="auth-logo">
-                <h1 class="bullion-title">
-                    <span class="gold-text">GOLD</span> <span class="bullion-text"><i>Boolean</i></span>
-                </h1>
-                <p class="auth-subtitle">Boolean Search Management Platform</p>
-            </div>
-            
-            <div class="auth-options">
-                <h2>Choose Your Sign-In Method</h2>
-                
-                <!-- Google Authentication -->
-                <div class="auth-option">
-                    <button onclick="signInWithGoogle()" class="auth-option-btn google-auth-btn">
-                        <span class="auth-icon">🔍</span>
-                        <span class="auth-text">Sign in with Google</span>
-                    </button>
-                </div>
-                
-                <!-- Guest Authentication -->
-                <div class="auth-option">
-                    <button onclick="signInAsGuest()" class="auth-option-btn guest-auth-btn">
-                        <span class="auth-icon">👤</span>
-                        <span class="auth-text">Continue as Guest</span>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="auth-footer">
-                <p>Your data will be saved locally and can be exported at any time.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="container" id="appContainer" style="display: none;">
+    <div class="container" id="appContainer">
         <header>
           <div class="header-flex-inline">
             <div class="header-main-inline">
@@ -74,11 +35,11 @@
                 <span id="dataStatus" class="data-status" title="Shows the current save status. Always 'Saved' if your data is up to date.">✓</span>
               </div>
               
-              <!-- Auth Section -->
-              <div class="auth-section">
+              <!-- User Info Section -->
+              <div class="user-info-section">
                 <div id="userInfo" class="user-info">
-                  <span id="userEmail" class="user-email"></span>
-                  <button onclick="logout()" class="auth-btn logout-btn">Logout</button>
+                  <span id="userEmail" class="user-email">Local User</span>
+                  <span class="user-status">✓ Data Saved Locally</span>
                 </div>
               </div>
             </div>
@@ -462,55 +423,9 @@
         </div>
     </div>
 
-    <!-- Auth Modals -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Login</h3>
-                <span class="close" onclick="closeAuthModal('loginModal')">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="loginEmail">Email:</label>
-                    <input type="email" id="loginEmail" placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password:</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password">
-                </div>
-                <div id="loginError" class="auth-error" style="display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button onclick="login()" class="save-btn">Login</button>
-                <button onclick="closeAuthModal('loginModal')" class="cancel-btn">Cancel</button>
-            </div>
-        </div>
-    </div>
 
-    <div id="signupModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Sign Up</h3>
-                <span class="close" onclick="closeAuthModal('signupModal')">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="signupEmail">Email:</label>
-                    <input type="email" id="signupEmail" placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label for="signupPassword">Password:</label>
-                    <input type="password" id="signupPassword" placeholder="Enter your password (min 6 characters)">
-                </div>
-                <div id="signupError" class="auth-error" style="display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button onclick="signup()" class="save-btn">Sign Up</button>
-                <button onclick="closeAuthModal('signupModal')" class="cancel-btn">Cancel</button>
-            </div>
-        </div>
-    </div>
-    </div>
+
+
 
 </body>
 </html> 

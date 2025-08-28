@@ -1,82 +1,62 @@
-# GOLD Boolean - v2.0 ALPHA
+# GOLD Boolean v2.0
 
-**Boolean Search Management Platform with Firebase Authentication**
+**Boolean Search Management Platform - Now Completely Local!**
 
-## 🚀 **v2.0 ALPHA - Authentication Implementation**
+## 🚀 **What's New in v2.0:**
+- **Local-First Design** - No external dependencies or services required
+- **Offline Capability** - Works completely without internet connection
+- **Privacy-Focused** - All data stays on your device
+- **Fast Performance** - No waiting for external services to load
 
-### ✅ **New Features:**
-- **Firebase Authentication** - Google Sign-In and Guest Access
-- **User-Specific Data Storage** - Each Google account has isolated data
-- **Instant Guest Access** - No delays, immediate app access
-- **Clean User Interface** - Username display, logout with page refresh
-- **Secure Data Isolation** - Complete separation between user accounts
+## ✨ **Key Features:**
+- **Boolean Search Builder** - Create complex search queries with visual tools
+- **Role Management Dashboard** - Organize and manage job roles
+- **Training Content System** - Store and access training materials
+- **Local Data Storage** - All data saved locally using localStorage
+- **Data Export/Import** - Backup and restore your data easily
+- **No Authentication Required** - Start using immediately
 
-### 🔧 **Authentication Options:**
-1. **Google Sign-In** - Requires Google account, full data persistence
-2. **Guest Access** - Instant access, temporary data storage
+## 🛠️ **Technical Requirements:**
+- **Modern Web Browser** - Chrome, Firefox, Safari, Edge
+- **No Server Required** - Runs entirely in your browser
+- **No Dependencies** - Pure HTML, CSS, and JavaScript
 
-### ⚠️ **KNOWN ISSUES (ALPHA):**
-- **Google Sign-In Popup** - May show "Cross-Origin-Opener-Policy" warnings (cosmetic)
-- **Guest Session** - Data lost on page refresh (by design)
-- **Firebase Configuration** - Requires proper Firebase project setup
-- **Browser Compatibility** - Some features may not work in older browsers
+## 🚀 **Quick Start:**
+1. **Download** the project files
+2. **Open** `index.html` in your web browser
+3. **Start Building** - No setup or configuration needed!
 
-### 🛠️ **Setup Requirements:**
-1. **Firebase Project** - Must be configured with Google Auth enabled
-2. **Local Web Server** - Must run via `http://localhost:8000` (not `file://`)
-3. **Node.js** - Required for Firebase dependencies
-
-### 📦 **Installation:**
-```bash
-npm install firebase
-python -m http.server 8000
-start http://localhost:8000
+## 📁 **Project Structure:**
+```
+├── index.html              # Main application interface
+├── script.js               # Core application logic
+├── styles.css              # Application styling
+├── package.json            # Project configuration
+└── README.md               # This file
 ```
 
-### 🔐 **Firebase Configuration:**
-- Enable Google Authentication in Firebase Console
-- Add `localhost` to authorized domains
-- Ensure proper API keys are configured
+## 💾 **Data Management:**
+- **Automatic Saving** - Data is saved automatically as you work
+- **Export Data** - Download backup files to your computer
+- **Import Data** - Restore from backup files
+- **Clear Data** - Reset the application when needed
 
----
+## 🔧 **Customization:**
+- **Add Categories** - Create your own organizational structure
+- **Custom Keywords** - Build your personal keyword library
+- **Role Templates** - Save and reuse role configurations
+- **Training Content** - Store your own training materials
 
-## 📋 **Original Features:**
-- Boolean search string builder
-- Keyword management and organization
-- Training content creation
-- Data export/import functionality
-- Role-based search management
+## 🆘 **Troubleshooting:**
+- **Data Not Saving** - Check browser localStorage support
+- **Performance Issues** - Clear browser cache and data
+- **Export Issues** - Ensure browser allows file downloads
 
-## 🎯 **Usage:**
-1. **Start the server**: `python -m http.server 8000`
-2. **Open browser**: Navigate to `http://localhost:8000`
-3. **Authenticate**: Choose Google Sign-In or Guest Access
-4. **Build searches**: Use the Builder tab for boolean search creation
-5. **Manage data**: Use Storage tab for keyword organization
-6. **Train**: Use Trainer tab for search refinement
+## 📝 **Notes:**
+- All data is stored locally in your browser
+- Data persists between browser sessions
+- Export your data regularly for backup
+- Works offline once loaded
 
-## 📁 **File Structure:**
-```
-BULLION GOLD/
-├── index.html          # Main application interface
-├── script.js           # Core application logic + Auth
-├── styles.css          # Application styling
-├── package.json        # Firebase dependencies
-├── run-app.bat         # Windows startup script
-└── README.md           # This file
-```
-
-## 🔄 **Data Management:**
-- **Google Users**: Data persists across sessions, isolated per account
-- **Guest Users**: Data stored locally, cleared on logout/refresh
-- **Export**: User-specific backup files with account information
-- **Import**: Restore data from exported backup files
-
-## 🚨 **ALPHA DISCLAIMER:**
-This is an ALPHA release with known issues. Authentication system is functional but may have edge cases. Use for testing and development purposes only.
-
----
-
-**Version**: 2.0 ALPHA  
-**Status**: Authentication Implemented (Issues Present)  
-**Last Updated**: January 2025 
+## 🤝 **Support:**
+For issues or questions, check the browser console for error messages. 
